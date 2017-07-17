@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Vector2F.cpp
 //  G3MiOSSDK
@@ -31,7 +31,7 @@ public class Vector2F
 
   public static Vector2F nan()
   {
-    return new Vector2F(java.lang.Float.NaN, java.lang.Float.NaN);
+    return new Vector2F(Float.NaN, Float.NaN);
   }
 
   public final float _x;

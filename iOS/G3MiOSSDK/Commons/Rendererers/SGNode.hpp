@@ -12,25 +12,18 @@
 #include <string>
 #include <vector>
 
-#include "GLState.hpp"
-
 class G3MContext;
 class G3MRenderContext;
-class SGShape;
-class GLGlobalState;
-class GPUProgramState;
+class GLState;
+
 
 class SGNode {
 protected:
   const std::string _id;
-  const std::string _sId;
-  
-  //  SGNode*              _parent;
+  const std::string _sID;
+
   std::vector<SGNode*> _children;
-  
-  
-  //  void setParent(SGNode* parent);
-  
+
 protected:
 #ifdef C_CODE
   const G3MContext* _context;
@@ -38,28 +31,27 @@ protected:
 #ifdef JAVA_CODE
   protected G3MContext _context;
 #endif
-  
-  SGShape *_shape;
-  
+
+  std::string _uriPrefix;
+
 public:
-  
+
   SGNode(const std::string& id,
-         const std::string& sId) :
+         const std::string& sID) :
   _id(id),
-  _sId(sId),
+  _sID(sID),
   _context(NULL),
-  _shape(NULL)
-  //  _parent(NULL)
+  _uriPrefix("")
   {
   }
-  
+
   virtual ~SGNode();
-  
+
   virtual void initialize(const G3MContext* context,
-                          SGShape *shape);
-  
+                          const std::string& uriPrefix);
+
   void addNode(SGNode* child);
-  
+
   virtual bool isReadyToRender(const G3MRenderContext* rc);
 
   virtual void prepareRender(const G3MRenderContext* rc);
@@ -71,7 +63,9 @@ public:
                       bool renderNotReadyShapes);
 
   virtual const GLState* createState(const G3MRenderContext* rc,
-                                     const GLState* parentState) { return parentState;}
+                                     const GLState* parentState) {
+    return parentState;
+  }
 
   size_t getChildrenCount() const {
     return _children.size();
@@ -81,11 +75,14 @@ public:
     return _children[i];
   }
 
-  virtual void rawRender(const G3MRenderContext* rc, const GLState* parentGLState) {}
+  virtual void rawRender(const G3MRenderContext* rc,
+                         const GLState* parentGLState) {
+  }
 
-  virtual std::string description() {
+  virtual const std::string description() {
     return "SGNode";
-  };
+  }
+  
 };
 
 #endif

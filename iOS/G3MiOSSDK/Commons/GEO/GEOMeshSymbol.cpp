@@ -14,8 +14,9 @@
 #include "IndexedMesh.hpp"
 #include "GLConstants.hpp"
 #include "Color.hpp"
-
+#include "Geodetic2D.hpp"
 #include "MeshRenderer.hpp"
+
 
 Mesh* GEOMeshSymbol::createLine2DMesh(const std::vector<Geodetic2D*>* coordinates,
                                       const Color& lineColor,
@@ -41,7 +42,6 @@ Mesh* GEOMeshSymbol::createLine2DMesh(const std::vector<Geodetic2D*>* coordinate
                                 1,
                                 new Color(lineColor),
                                 NULL,
-                                0.0f,
                                 false);
 
   delete vertices;
@@ -88,7 +88,6 @@ Mesh* GEOMeshSymbol::createLines2DMesh(const std::vector<std::vector<Geodetic2D*
                                  1,
                                  new Color(lineColor),
                                  NULL,
-                                 0.0f,
                                  false);
 
   delete vertices;

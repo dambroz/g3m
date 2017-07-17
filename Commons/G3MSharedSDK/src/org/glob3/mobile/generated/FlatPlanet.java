@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  FlatPlanet.cpp
 //  G3MiOSSDK
@@ -147,6 +147,7 @@ public class FlatPlanet extends Planet
   {
     toCartesian(geodetic._latitude, geodetic._longitude, geodetic._height, result);
   }
+
   public final void toCartesian(Geodetic2D geodetic, MutableVector3D result)
   {
     toCartesian(geodetic._latitude, geodetic._longitude, 0.0, result);
@@ -199,9 +200,9 @@ public class FlatPlanet extends Planet
     return computePreciseLatLonDistance(g1, g2);
   }
 
-  public final MutableMatrix44D createGeodeticTransformMatrix(Geodetic3D position)
+  public final MutableMatrix44D createGeodeticTransformMatrix(Angle latitude, Angle longitude, double height)
   {
-    return MutableMatrix44D.createTranslationMatrix(toCartesian(position));
+    return MutableMatrix44D.createTranslationMatrix(toCartesian(latitude, longitude, height));
   }
 
   public final boolean isFlat()
@@ -357,10 +358,10 @@ public class FlatPlanet extends Planet
 
   public final Vector3D getNorth()
   {
-    return Vector3D.upY();
+    return Vector3D.UP_Y;
   }
 
-  public final void applyCameraConstrainers(Camera previousCamera, Camera nextCamera)
+  public final void applyCameraConstrains(Camera previousCamera, Camera nextCamera)
   {
   
   }
@@ -370,7 +371,7 @@ public class FlatPlanet extends Planet
     final Vector3D asw = toCartesian(rendereSector.getSW());
     final Vector3D ane = toCartesian(rendereSector.getNE());
     final double height = asw.sub(ane).length() * 1.9;
-
+  
     return new Geodetic3D(rendereSector._center, height);
   }
 

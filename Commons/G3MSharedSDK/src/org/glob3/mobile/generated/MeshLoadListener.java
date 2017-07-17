@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  MeshRenderer.cpp
 //  G3MiOSSDK
@@ -17,7 +17,11 @@ package org.glob3.mobile.generated;
 
 
 
+
+
 //class Mesh;
+//class Color;
+//class Camera;
 
 
 public interface MeshLoadListener

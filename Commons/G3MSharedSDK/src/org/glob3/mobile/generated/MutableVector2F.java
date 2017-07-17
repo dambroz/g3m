@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  MutableVector2F.cpp
 //  G3MiOSSDK
@@ -80,7 +80,7 @@ public class MutableVector2F
 
   public static MutableVector2F nan()
   {
-    return new MutableVector2F(java.lang.Float.NaN, java.lang.Float.NaN);
+    return new MutableVector2F(Float.NaN, Float.NaN);
   }
 
   public final Vector2F asVector2F()

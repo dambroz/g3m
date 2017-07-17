@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Mark.cpp
 //  G3MiOSSDK
@@ -16,15 +16,17 @@ package org.glob3.mobile.generated;
 
 
 
+
 //class IImage;
 //class IFloatBuffer;
-//class IGLTextureId;
+//class IGLTextureID;
 //class MarkTouchListener;
 //class GLGlobalState;
 //class GPUProgramState;
 //class TextureIDReference;
 //class EffectTarget;
 //class IImageBuilder;
+
 
 public class MarkUserData
 {

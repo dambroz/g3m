@@ -37,6 +37,8 @@ class ShapesRenderer;
 class MarksRenderer;
 class ErrorRenderer;
 class InfoDisplay;
+class FrustumPolicy;
+class NearFrustumRenderer;
 
 
 class IG3MBuilder {
@@ -57,6 +59,7 @@ private:
   ProtoRenderer*                    _busyRenderer;
   ErrorRenderer*                    _errorRenderer;
   Renderer*                         _hudRenderer;
+  NearFrustumRenderer*              _nearFrustumRenderer;
   std::vector<Renderer*>*           _renderers;
   GInitializationTask*              _initializationTask;
   bool                              _autoDeleteInitializationTask;
@@ -68,6 +71,8 @@ private:
   SceneLighting*                    _sceneLighting;
   Sector*                           _shownSector;
   InfoDisplay*                      _infoDisplay;
+  bool                              _atmosphere;
+  FrustumPolicy*                    _frustumPolicy;
 
   GL*                               getGL();
   ICameraActivityListener*          getCameraActivityListener();
@@ -76,6 +81,7 @@ private:
   ProtoRenderer*                    getBusyRenderer();
   ErrorRenderer*                    getErrorRenderer();
   Renderer*                         getHUDRenderer() const;
+  NearFrustumRenderer*              getNearFrustumRenderer() const;
   Color*                            getBackgroundColor();
   std::vector<Renderer*>*           getRenderers();
   bool                              getLogFPS();
@@ -92,10 +98,12 @@ private:
   Sector                            getShownSector() const;
   InfoDisplay*                      getInfoDisplay() const;
 
+  FrustumPolicy*                    getFrustumPolicy();
+
   void pvtSetInitializationTask(GInitializationTask* initializationTask,
                                 const bool autoDeleteInitializationTask);
 
-  bool containsPlanetRenderer(std::vector<Renderer*> renderers);
+  bool containsPlanetRenderer(const std::vector<Renderer*>& renderers);
 
 
 protected:
@@ -118,6 +126,8 @@ public:
   IDownloader*                      getDownloader();
   IThreadUtils*                     getThreadUtils();
 
+  void setAtmosphere(const bool atmosphere);
+
   void setGL(GL* gl);
 
   void setStorage(IStorage* storage);
@@ -132,7 +142,7 @@ public:
 
   void addCameraConstraint(ICameraConstrainer* cameraConstraint);
 
-  void setCameraConstrainsts(std::vector<ICameraConstrainer*> cameraConstraints);
+  void setCameraConstraints(const std::vector<ICameraConstrainer*>& cameraConstraints);
 
   void setCameraRenderer(CameraRenderer* cameraRenderer);
 
@@ -144,13 +154,15 @@ public:
 
   void setHUDRenderer(Renderer* hudRenderer);
 
+  void setNearFrustumRenderer(NearFrustumRenderer* nearFrustumRenderer);
+
   void addRenderer(Renderer* renderer);
 
-  void setRenderers(std::vector<Renderer*> renderers);
+  void setRenderers(const std::vector<Renderer*>& renderers);
 
   void addPeriodicalTask(PeriodicalTask* periodicalTask);
 
-  void setPeriodicalTasks(std::vector<PeriodicalTask*> periodicalTasks);
+  void setPeriodicalTasks(const std::vector<PeriodicalTask*>& periodicalTasks);
 
   void setLogFPS(const bool logFPS);
 
@@ -163,6 +175,8 @@ public:
     pvtSetInitializationTask(initializationTask,
                              autoDeleteInitializationTask);
   }
+
+  void setFrustumPolicy(FrustumPolicy* frustumPolicy);
 
   const Planet* getPlanet();
   PlanetRendererBuilder* getPlanetRendererBuilder();

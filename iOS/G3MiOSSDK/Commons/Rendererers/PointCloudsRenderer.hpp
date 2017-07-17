@@ -16,12 +16,15 @@
 #include "TimeInterval.hpp"
 #include "Vector3D.hpp"
 #include "Box.hpp"
+#include "GAsyncTask.hpp"
 
 class IDownloader;
 class Sector;
 class Frustum;
 class DirectMesh;
 class ByteBufferIterator;
+class ITimer;
+
 
 class PointCloudsRenderer : public DefaultRenderer {
 public:

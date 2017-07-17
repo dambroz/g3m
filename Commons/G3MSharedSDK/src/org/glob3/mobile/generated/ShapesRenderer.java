@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class ShapesRenderer extends DefaultRenderer
 {
   private static class LoadQueueItem
@@ -134,12 +134,11 @@ public class ShapesRenderer extends DefaultRenderer
       if (shape != null)
          shape.dispose();
     }
-
+  
     _glState._release();
     _glStateTransparent._release();
-
+  
     super.dispose();
-
   }
 
   public final void addShape(Shape shape)

@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Sphere.cpp
 //  G3MiOSSDK
@@ -16,6 +16,10 @@ package org.glob3.mobile.generated;
 //
 
 
+
+
+
+//class Mesh;
 
 
 public class Sphere extends BoundingVolume
@@ -177,7 +181,6 @@ public class Sphere extends BoundingVolume
   {
     return rc.getCurrentCamera().getProjectedSphereArea(this);
   }
-//  Vector2I projectedExtent(const G3MRenderContext* rc) const;
 
   public final void render(G3MRenderContext rc, GLState parentState, Color color)
   {
@@ -355,5 +358,11 @@ public class Sphere extends BoundingVolume
   {
     return new Sphere(this);
   }
+
+  public final Sphere copy()
+  {
+    return new Sphere(this);
+  }
+
 
 }

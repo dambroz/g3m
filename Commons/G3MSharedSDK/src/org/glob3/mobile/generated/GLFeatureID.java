@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  GLFeature.cpp
 //  G3MiOSSDK
@@ -19,6 +19,7 @@ package org.glob3.mobile.generated;
 
 //class Camera;
 
+
 public enum GLFeatureID
 {
   GLF_BILLBOARD,
@@ -35,7 +36,8 @@ public enum GLFeatureID
   GLF_DIRECTION_LIGTH,
   GLF_VERTEX_NORMAL,
   GLF_MODEL_VIEW,
-  GLF_BLENDING_MODE;
+  GLF_BLENDING_MODE,
+  GLF_CAMERA_POSITION;
 
    public int getValue()
    {

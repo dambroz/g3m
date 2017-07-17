@@ -20,6 +20,9 @@
 #include "DirectMesh.hpp"
 #include "IFactory.hpp"
 #include "IDeviceInfo.hpp"
+#include "G3MRenderContext.hpp"
+#include "ITimer.hpp"
+
 
 void PointCloudsRenderer::PointCloudMetadataDownloadListener::onDownload(const URL& url,
                                                                          IByteBuffer* buffer,
@@ -518,7 +521,6 @@ long long PointCloudsRenderer::PointCloudInnerNode::rawRender(const PointCloud* 
                              pointSize * 2 *  IFactory::instance()->getDeviceInfo()->getDevicePixelRatio(),
                              Color::newFromRGBA(1, 1, 0, 1), // flatColor
                              NULL, // colors
-                             1,    // colorsIntensity
                              true);
     }
     _mesh->render(rc, glState);
@@ -717,7 +719,7 @@ DirectMesh* PointCloudsRenderer::PointCloudLeafNode::createMesh(double minHeight
                                                                 float pointSize) {
   const size_t firstPointsVerticesBufferSize = _firstPointsVerticesBuffer->size();
 
-  const Color baseColor = Color::magenta();
+  const Color baseColor = Color::MAGENTA;
   const int wheelSize = 2147483647;
   const IMathUtils* mu = IMathUtils::instance();
 
@@ -751,7 +753,6 @@ DirectMesh* PointCloudsRenderer::PointCloudLeafNode::createMesh(double minHeight
                                       pointSize * IFactory::instance()->getDeviceInfo()->getDevicePixelRatio(),
                                       NULL,                     // flatColor
                                       _firstPointsColorsBuffer, // colors
-                                      1,                        // colorsIntensity
                                       true);
     mesh->setRenderVerticesCount( mu->min(_neededPoints, firstPointsCount) );
 
@@ -822,7 +823,6 @@ DirectMesh* PointCloudsRenderer::PointCloudLeafNode::createMesh(double minHeight
                                     pointSize * IFactory::instance()->getDeviceInfo()->getDevicePixelRatio(),
                                     NULL,   // flatColor
                                     colors, // colors
-                                    1,      // colorsIntensity
                                     true);
   // mesh->setRenderVerticesCount( mu->min(_neededPoints, firstPointsCount) );
   mesh->setRenderVerticesCount( pointsCount );

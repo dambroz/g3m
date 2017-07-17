@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  PlanetRendererBuilder.cpp
 //  G3MiOSSDK
@@ -25,6 +25,7 @@ package org.glob3.mobile.generated;
 //class LayerSet;
 //class VisibleSectorListener;
 //class ElevationDataProvider;
+//class DEMProvider;
 //class Sector;
 //class ChangedRendererInfoListener;
 //class IImageBuilder;
@@ -44,14 +45,14 @@ public class PlanetRendererBuilder
   private TilesRenderParameters _parameters;
   private boolean _showStatistics;
   private boolean _renderDebug;
-  private boolean _forceFirstLevelTilesRenderOnStart;
   private boolean _incrementalTileQuality;
   private Quality _quality;
   private java.util.ArrayList<VisibleSectorListener> _visibleSectorListeners;
   private java.util.ArrayList<Long> _stabilizationMilliSeconds;
-  private long _tileDownloadPriority;
+  private long _tileTextureDownloadPriority;
 
   private ElevationDataProvider _elevationDataProvider;
+  private DEMProvider _demProvider;
   private float _verticalExaggeration;
 
 
@@ -137,16 +138,6 @@ public class PlanetRendererBuilder
   }
 
   /**
-   * Returns the forceFirstLevelTilesRenderOnStart flag.
-   *
-   * @return _forceFirstLevelTilesRenderOnStart: bool
-   */
-  private boolean getForceFirstLevelTilesRenderOnStart()
-  {
-    return _forceFirstLevelTilesRenderOnStart;
-  }
-
-  /**
    * Returns the incrementalTileQuality flag.
    *
    * @return _incrementalTileQuality: bool
@@ -183,13 +174,13 @@ public class PlanetRendererBuilder
   }
 
   /**
-   * Returns the _tileDownloadPriority.
+   * Returns the _tileTextureDownloadPriority.
    *
-   * @return _tileDownloadPriority: long long
+   * @return _tileTextureDownloadPriority: long long
    */
-  private long getTileDownloadPriority()
+  private long getTileTextureDownloadPriority()
   {
-    return _tileDownloadPriority;
+    return _tileTextureDownloadPriority;
   }
 
   private boolean _logTilesPetitions;
@@ -200,7 +191,7 @@ public class PlanetRendererBuilder
   }
   private TilesRenderParameters createPlanetRendererParameters()
   {
-    return new TilesRenderParameters(getRenderDebug(), getForceFirstLevelTilesRenderOnStart(), getIncrementalTileQuality(), getQuality());
+    return new TilesRenderParameters(getRenderDebug(), getIncrementalTileQuality(), getQuality());
   }
   private TileTessellator createTileTessellator()
   {
@@ -213,6 +204,11 @@ public class PlanetRendererBuilder
   {
     return _elevationDataProvider;
   }
+  private DEMProvider getDEMProvider()
+  {
+    return _demProvider;
+  }
+
   private float getVerticalExaggeration()
   {
     if (_verticalExaggeration <= 0.0f)
@@ -227,7 +223,7 @@ public class PlanetRendererBuilder
   {
     if (_renderedSector == null)
     {
-      return Sector.fullSphere();
+      return Sector.FULL_SPHERE;
     }
     return _renderedSector;
   }
@@ -258,7 +254,8 @@ public class PlanetRendererBuilder
   {
     if (_defaultTileBackgroundImage == null)
     {
-      return new DefaultChessCanvasImageBuilder(256, 256, Color.black(), Color.white(), 4);
+      // _defaultTileBackgroundImage = new DefaultChessCanvasImageBuilder(256, 256, Color::BLACK, Color::WHITE, 4);
+      _defaultTileBackgroundImage = new DefaultChessCanvasImageBuilder(256, 256, Color.WHITE, Color.TRANSPARENT, 4);
     }
     return _defaultTileBackgroundImage;
   }
@@ -288,7 +285,6 @@ public class PlanetRendererBuilder
   {
      _showStatistics = false;
      _renderDebug = false;
-     _forceFirstLevelTilesRenderOnStart = true;
      _incrementalTileQuality = false;
      _quality = Quality.QUALITY_LOW;
      _parameters = null;
@@ -297,8 +293,9 @@ public class PlanetRendererBuilder
      _tileTessellator = null;
      _visibleSectorListeners = null;
      _stabilizationMilliSeconds = null;
-     _tileDownloadPriority = DownloadPriority.HIGHER;
+     _tileTextureDownloadPriority = DownloadPriority.HIGHER;
      _elevationDataProvider = null;
+     _demProvider = null;
      _verticalExaggeration = 0F;
      _renderedSector = null;
      _renderTileMeshes = true;
@@ -329,6 +326,10 @@ public class PlanetRendererBuilder
        _tileTessellator.dispose();
     if (_elevationDataProvider != null)
        _elevationDataProvider.dispose();
+    if (_demProvider != null)
+    {
+      _demProvider._release();
+    }
   
     if (_renderedSector != null)
        _renderedSector.dispose();
@@ -344,7 +345,7 @@ public class PlanetRendererBuilder
       layerSet.addLayer(geoVectorLayer);
     }
   
-    PlanetRenderer planetRenderer = new PlanetRenderer(getTileTessellator(), getElevationDataProvider(), true, getVerticalExaggeration(), getTexturizer(), layerSet, getParameters(), getShowStatistics(), getTileDownloadPriority(), getRenderedSector(), getRenderTileMeshes(), getLogTilesPetitions(), getChangedRendererInfoListener(), getTouchEventTypeOfTerrainTouchListener(), getTileLODTester(), getTileVisibilityTester());
+    PlanetRenderer planetRenderer = new PlanetRenderer(getTileTessellator(), getElevationDataProvider(), true, getDEMProvider(), getVerticalExaggeration(), getTexturizer(), layerSet, getParameters(), getShowStatistics(), getTileTextureDownloadPriority(), getRenderedSector(), getRenderTileMeshes(), getLogTilesPetitions(), getChangedRendererInfoListener(), getTouchEventTypeOfTerrainTouchListener(), getTileLODTester(), getTileVisibilityTester());
   
     for (int i = 0; i < getVisibleSectorListeners().size(); i++)
     {
@@ -361,6 +362,7 @@ public class PlanetRendererBuilder
     _stabilizationMilliSeconds = null;
   
     _elevationDataProvider = null;
+    _demProvider = null;
   
     if (_renderedSector != null)
        _renderedSector.dispose();
@@ -374,8 +376,7 @@ public class PlanetRendererBuilder
   {
     if (_tileTessellator != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _tileTessellator already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _tileTessellator already initialized");
     }
     _tileTessellator = tileTessellator;
   }
@@ -383,8 +384,7 @@ public class PlanetRendererBuilder
   {
     if (_texturizer != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _texturizer already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _texturizer already initialized");
     }
     _texturizer = tileTexturizer;
   }
@@ -392,8 +392,7 @@ public class PlanetRendererBuilder
   {
     if (_layerSet != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _layerSet already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _layerSet already initialized");
     }
     _layerSet = layerSet;
   }
@@ -401,8 +400,7 @@ public class PlanetRendererBuilder
   {
     if (_parameters != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _parameters already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _parameters already initialized");
     }
     _parameters = parameters;
   }
@@ -413,10 +411,6 @@ public class PlanetRendererBuilder
   public final void setRenderDebug(boolean renderDebug)
   {
     _renderDebug = renderDebug;
-  }
-  public final void setForceFirstLevelTilesRenderOnStart(boolean forceFirstLevelTilesRenderOnStart)
-  {
-    _forceFirstLevelTilesRenderOnStart = forceFirstLevelTilesRenderOnStart;
   }
   public final void setIncrementalTileQuality(boolean incrementalTileQuality)
   {
@@ -431,27 +425,34 @@ public class PlanetRendererBuilder
   {
     addVisibleSectorListener(listener, TimeInterval.zero());
   }
-  public final void setTileDownloadPriority(long tileDownloadPriority)
+  public final void setTileTextureDownloadPriority(long tileTextureDownloadPriority)
   {
-    _tileDownloadPriority = tileDownloadPriority;
+    _tileTextureDownloadPriority = tileTextureDownloadPriority;
   }
 
   public final void setElevationDataProvider(ElevationDataProvider elevationDataProvider)
   {
     if (_elevationDataProvider != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _elevationDataProvider already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _elevationDataProvider already initialized");
     }
     _elevationDataProvider = elevationDataProvider;
+  }
+
+  public final void setDEMProvider(DEMProvider demProvider)
+  {
+    if (_demProvider != null)
+    {
+      throw new RuntimeException("LOGIC ERROR: _demProvider already initialized");
+    }
+    _demProvider = demProvider;
   }
 
   public final void setVerticalExaggeration(float verticalExaggeration)
   {
     if (_verticalExaggeration > 0.0f)
     {
-      ILogger.instance().logError("LOGIC ERROR: _verticalExaggeration already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _verticalExaggeration already initialized");
     }
     _verticalExaggeration = verticalExaggeration;
   }
@@ -460,8 +461,7 @@ public class PlanetRendererBuilder
   {
     if (_renderedSector != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: _renderedSector already initialized");
-      return;
+      throw new RuntimeException("LOGIC ERROR: _renderedSector already initialized");
     }
     _renderedSector = new Sector(sector);
   }
@@ -501,11 +501,9 @@ public class PlanetRendererBuilder
   {
     if (_changedInfoListener != null)
     {
-      ILogger.instance().logError("LOGIC ERROR: ChangedInfoListener in Planet Render Builder already set");
-      return;
+      throw new RuntimeException("LOGIC ERROR: ChangedInfoListener in Planet Render Builder already set");
     }
     _changedInfoListener = changedInfoListener;
-    ILogger.instance().logInfo("LOGIC INFO: ChangedInfoListener in Planet Render Builder set OK");
   }
 
   public final void setTouchEventTypeOfTerrainTouchListener(TouchEventType touchEventTypeOfTerrainTouchListener)

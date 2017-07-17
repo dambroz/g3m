@@ -21,12 +21,22 @@ class PlanetRenderContext;
 class Vector2S;
 class Vector2F;
 class Angle;
+class DEMGrid;
 
-class TileTessellatorMeshData{
+
+class TileTessellatorMeshData {
 public:
   double _minHeight;
   double _maxHeight;
   double _averageHeight;
+
+  TileTessellatorMeshData() :
+  _minHeight(0),
+  _maxHeight(0),
+  _averageHeight(0)
+  {
+
+  }
 };
 
 
@@ -39,7 +49,8 @@ public:
                                const PlanetRenderContext* prc,
                                Tile* tile,
                                const ElevationData* elevationData,
-                               TileTessellatorMeshData& data) const = 0;
+                               const DEMGrid* grid,
+                               TileTessellatorMeshData& tileTessellatorMeshData) const = 0;
 
   virtual Vector2S getTileMeshResolution(const G3MRenderContext* rc,
                                          const PlanetRenderContext* prc,

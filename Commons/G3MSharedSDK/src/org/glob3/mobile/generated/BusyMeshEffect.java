@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //***************************************************************
 
 public class BusyMeshEffect extends EffectNeverEnding
@@ -21,13 +21,13 @@ public class BusyMeshEffect extends EffectNeverEnding
   public final void doStep(G3MRenderContext rc, TimeInterval when)
   {
     super.doStep(rc, when);
-
+  
     final long now = when.milliseconds();
-    final long ellapsed = now - _lastMS;
+    final long elapsed = now - _lastMS;
     _lastMS = now;
-
-    final double deltaDegrees = (360.0 / 1200.0) * ellapsed;
-
+  
+    final double deltaDegrees = (360.0 / 1200.0) * elapsed;
+  
     _renderer.incDegrees(deltaDegrees);
   }
 

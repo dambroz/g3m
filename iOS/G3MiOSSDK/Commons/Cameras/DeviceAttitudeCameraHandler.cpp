@@ -11,6 +11,17 @@
 #include "IDeviceAttitude.hpp"
 #include "IDeviceLocation.hpp"
 #include "IFactory.hpp"
+#include "G3MRenderContext.hpp"
+#include "ILogger.hpp"
+#include "Planet.hpp"
+#include "ErrorHandling.hpp"
+#include "RenderState.hpp"
+#include "Camera.hpp"
+
+
+RenderState DeviceAttitudeCameraHandler::getRenderState(const G3MRenderContext* rc) {
+  return RenderState::ready();
+}
 
 DeviceAttitudeCameraHandler::DeviceAttitudeCameraHandler(bool updateLocation,
                                                          ILocationModifier* locationModifier):
@@ -27,15 +38,15 @@ DeviceAttitudeCameraHandler::~DeviceAttitudeCameraHandler() {
   delete _locationModifier;
 }
 
-void DeviceAttitudeCameraHandler::setPositionOnNextCamera(Camera* nextCamera, Geodetic3D& pos) const{
+void DeviceAttitudeCameraHandler::setPositionOnNextCamera(Camera* nextCamera, Geodetic3D& pos) const {
   if (nextCamera->hasValidViewDirection()) {
     nextCamera->setGeodeticPosition(pos);
-  } else{
+  }
+  else {
     ILogger::instance()->logWarning("Trying to set position of unvalid camera. ViewDirection: %s",
                                     nextCamera->getViewDirection().description().c_str());
   }
 }
-
 
 void DeviceAttitudeCameraHandler::render(const G3MRenderContext* rc,
                                          CameraContext *cameraContext) {
@@ -97,5 +108,5 @@ void DeviceAttitudeCameraHandler::render(const G3MRenderContext* rc,
   //Applying to Camera CS
   CoordinateSystem finalCS = camCS.applyRotation(_camRM);
   nextCamera->setCameraCoordinateSystem(finalCS);
-
+  
 }

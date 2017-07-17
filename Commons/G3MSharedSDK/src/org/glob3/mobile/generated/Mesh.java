@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Mesh.cpp
 //  G3MiOSSDK
@@ -15,16 +15,29 @@ package org.glob3.mobile.generated;
 
 
 
-
 //class Vector3D;
-//class GPUProgramState;
+//class BoundingVolume;
+//class G3MRenderContext;
+//class GLState;
+
 
 public abstract class Mesh
 {
+  public static class MeshUserData
+  {
+    public void dispose()
+    {
+    }
+  }
+
   private boolean _enable;
-  public Mesh()
+
+  private MeshUserData _userData;
+
+  protected Mesh()
   {
      _enable = true;
+     _userData = null;
   }
 
   public final void setEnable(boolean enable)
@@ -39,11 +52,28 @@ public abstract class Mesh
 
   public void dispose()
   {
+    if (_userData != null)
+       _userData.dispose();
+  }
+
+  public final Mesh.MeshUserData getUserData()
+  {
+    return _userData;
+  }
+
+  public final void setUserData(MeshUserData userData)
+  {
+    if (_userData != userData)
+    {
+      if (_userData != null)
+         _userData.dispose();
+      _userData = userData;
+    }
   }
 
   public abstract int getVertexCount();
 
-  public abstract Vector3D getVertex(int i);
+  public abstract Vector3D getVertex(int index);
 
   public abstract BoundingVolume getBoundingVolume();
 
@@ -58,7 +88,5 @@ public abstract class Mesh
       rawRender(rc, parentGLState);
     }
   }
-
-  public abstract void showNormals(boolean v);
 
 }

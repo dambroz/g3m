@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  URLTemplateLayer.cpp
 //  G3MiOSSDK
@@ -18,6 +18,7 @@ package org.glob3.mobile.generated;
 
 
 //class IStringUtils;
+//class IMathUtils;
 
 
 public class URLTemplateLayer extends RasterLayer
@@ -91,12 +92,16 @@ public class URLTemplateLayer extends RasterLayer
   
     final Sector sector = tile._sector;
   
-    final Vector2I tileTextureResolution = _parameters._tileTextureResolution;
+    final Vector2S tileTextureResolution = _parameters._tileTextureResolution;
   
     final int level = tile._level;
     final int column = tile._column;
     final int numRows = (int)(_parameters._topSectorSplitsByLatitude * _mu.pow(2.0, level));
     final int row = numRows - tile._row - 1;
+  
+    final Geodetic2D lower = sector._lower;
+    final Geodetic2D upper = sector._upper;
+    final Geodetic2D center = sector._center;
   
     final double north = MercatorUtils.latitudeToMeters(sector._upper._latitude);
     final double south = MercatorUtils.latitudeToMeters(sector._lower._latitude);
@@ -131,10 +136,12 @@ public class URLTemplateLayer extends RasterLayer
     path = _su.replaceAll(path, "{level}", _su.toString(level));
     path = _su.replaceAll(path, "{z}", _su.toString(level));
     path = _su.replaceAll(path, "{level-1}", _su.toString(level - 1));
-    path = _su.replaceAll(path, "{lowerLatitude}", _su.toString(sector._lower._latitude._degrees));
-    path = _su.replaceAll(path, "{lowerLongitude}", _su.toString(sector._lower._longitude._degrees));
-    path = _su.replaceAll(path, "{upperLatitude}", _su.toString(sector._upper._latitude._degrees));
-    path = _su.replaceAll(path, "{upperLongitude}", _su.toString(sector._upper._longitude._degrees));
+    path = _su.replaceAll(path, "{lowerLatitude}", _su.toString(lower._latitude._degrees));
+    path = _su.replaceAll(path, "{lowerLongitude}", _su.toString(lower._longitude._degrees));
+    path = _su.replaceAll(path, "{upperLatitude}", _su.toString(upper._latitude._degrees));
+    path = _su.replaceAll(path, "{upperLongitude}", _su.toString(upper._longitude._degrees));
+    path = _su.replaceAll(path, "{centerLatitude}", _su.toString(center._latitude._degrees));
+    path = _su.replaceAll(path, "{centerLongitude}", _su.toString(center._longitude._degrees));
     path = _su.replaceAll(path, "{north}", _su.toString(north));
     path = _su.replaceAll(path, "{south}", _su.toString(south));
     path = _su.replaceAll(path, "{west}", _su.toString(west));

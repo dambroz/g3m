@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  MapBooOLDBuilder.cpp
 //  G3MiOSSDK
@@ -58,9 +58,9 @@ package org.glob3.mobile.generated;
 //class Sector;
 //class IByteBuffer;
 //class IBufferDownloadListener;
-
 //class TileVisibilityTester;
 //class TileLODTester;
+
 
 
 

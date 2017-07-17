@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  SGTranslateNode.cpp
 //  G3MiOSSDK
@@ -18,6 +18,7 @@ package org.glob3.mobile.generated;
 
 
 
+
 public class SGTranslateNode extends SGNode
 {
   private final double _x;
@@ -29,9 +30,9 @@ public class SGTranslateNode extends SGNode
   private GLState _glState;
 
 
-  public SGTranslateNode(String id, String sId, double x, double y, double z)
+  public SGTranslateNode(String id, String sID, double x, double y, double z)
   {
-     super(id, sId);
+     super(id, sID);
      _x = x;
      _y = y;
      _z = z;
@@ -49,6 +50,12 @@ public class SGTranslateNode extends SGNode
   public final String description()
   {
     return "SGTranslateNode";
+  }
+
+  public void dispose()
+  {
+    _glState._release();
+    super.dispose();
   }
 
 }

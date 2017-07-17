@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  NonOverlappingMarksRenderer.cpp
 //  G3MiOSSDK
@@ -30,6 +30,9 @@ package org.glob3.mobile.generated;
 //class TexturesHandler;
 //class NonOverlappingMark;
 //class SimpleTextureMapping;
+//class IFloatBuffer;
+//class IStringBuilder;
+
 
 public abstract class NonOverlappingMarkTouchListener
 {

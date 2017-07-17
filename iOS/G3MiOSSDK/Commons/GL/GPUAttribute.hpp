@@ -68,7 +68,7 @@ public:
 
   virtual void setAttribute(GL* gl, const int id) const = 0;
   virtual bool isEquals(const GPUAttributeValue* v) const = 0;
-  virtual std::string description() const = 0;
+  virtual const std::string description() const = 0;
 #ifdef JAVA_CODE
   @Override
   public String toString() {
@@ -198,7 +198,6 @@ public:
   }
 };
 
-///////////
 
 class GPUAttributeValueDisabled : public GPUAttributeValue {
 private:
@@ -223,7 +222,7 @@ public:
     return new GPUAttributeValueDisabled();
   }
 
-  std::string description() const {
+  const std::string description() const {
     return "Attribute Disabled.";
   }
 
@@ -285,7 +284,7 @@ public:
     return equal;
   }
 
-  std::string description() const {
+  const std::string description() const {
 
     IStringBuilder* isb = IStringBuilder::newStringBuilder();
     isb->addString("Attribute Value Float.");
@@ -300,7 +299,7 @@ public:
     isb->addString(" Normalized:");
     isb->addBool(_normalized);
 
-    std::string s = isb->getString();
+    const std::string s = isb->getString();
     delete isb;
     return s;
   }
@@ -356,9 +355,9 @@ private:
 public:
   GPUAttributeVec2Float(const std::string&name, int id):GPUAttribute(name, id, GLType::glFloat(), 2) {}
 };
-////////
 
-///////////
+
+
 class GPUAttributeValueVec3Float: public GPUAttributeValueVecFloat {
 private:
   ~GPUAttributeValueVec3Float() {
@@ -383,9 +382,9 @@ private:
 public:
   GPUAttributeVec3Float(const std::string&name, int id):GPUAttribute(name, id, GLType::glFloat(), 3) {}
 };
-////////
 
-///////////
+
+
 class GPUAttributeValueVec4Float: public GPUAttributeValueVecFloat {
 private:
   ~GPUAttributeValueVec4Float() {
@@ -410,6 +409,6 @@ private:
 public:
   GPUAttributeVec4Float(const std::string&name, int id):GPUAttribute(name, id, GLType::glFloat(), 4) {}
 };
-////////
+
 
 #endif

@@ -17,12 +17,14 @@
 #include "CompositeTileImageProvider.hpp"
 #include "Color.hpp"
 #include "Info.hpp"
+#include "ILogger.hpp"
+
 
 LayerSet::~LayerSet() {
   for (unsigned int i = 0; i < _layers.size(); i++) {
     delete _layers[i];
   }
-  
+
   if (_tileImageProvider != NULL) {
     _tileImageProvider->_release();
   }
@@ -32,7 +34,9 @@ bool LayerSet::onTerrainTouchEvent(const G3MEventContext* ec,
                                    const Geodetic3D& position,
                                    const Tile* tile) const {
 
-  for (int i = _layers.size()-1; i >= 0; i--) {
+  const size_t size = _layers.size();
+  for (size_t j = 0; j < size; j++) {
+    const size_t i = size - 1 - j;
     Layer* layer = _layers[i];
     if (layer->isAvailable(tile)) {
       LayerTouchEvent tte(position, tile->_sector, layer);
@@ -75,22 +79,22 @@ RenderState LayerSet::getRenderState() {
   bool busyFlag  = false;
   bool errorFlag = false;
   const size_t layersCount = _layers.size();
-  
+
   for (int i = 0; i < layersCount; i++) {
     Layer* child = _layers[i];
     if (child->isEnable()) {
       const RenderState childRenderState = child->getRenderState();
-      
+
       const RenderState_Type childRenderStateType = childRenderState._type;
-      
+
       if (childRenderStateType == RENDER_ERROR) {
         errorFlag = true;
-        
+
         const std::vector<std::string> childErrors = childRenderState.getErrors();
 #ifdef C_CODE
         _errors.insert(_errors.end(),
-        childErrors.begin(),
-        childErrors.end());
+                       childErrors.begin(),
+                       childErrors.end());
 #endif
 #ifdef JAVA_CODE
         _errors.addAll(childErrors);
@@ -101,7 +105,7 @@ RenderState LayerSet::getRenderState() {
       }
     }
   }
-  
+
   if (errorFlag) {
     return RenderState::error(_errors);
   }
@@ -203,44 +207,40 @@ bool LayerSet::isEquals(const LayerSet* that) const {
   return true;
 }
 
-bool LayerSet::checkLayersDataSector(const bool forceFirstLevelTilesRenderOnStart,
-                                     std::vector<std::string>& errors) const {
+bool LayerSet::checkLayersDataSector(std::vector<std::string>& errors) const {
+  Sector* biggestDataSector = NULL;
 
-  if (forceFirstLevelTilesRenderOnStart) {
-    Sector* biggestDataSector = NULL;
+  const size_t layersCount = _layers.size();
+  double biggestArea = 0;
+  for (size_t i = 0; i < layersCount; i++) {
+    Layer* layer = _layers[i];
+    if (layer->isEnable()) {
+      const double layerArea = layer->getDataSector().getAngularAreaInSquaredDegrees();
+      if (layerArea > biggestArea) {
+        delete biggestDataSector;
+        biggestDataSector = new Sector(layer->getDataSector());
+        biggestArea = layerArea;
+      }
+    }
+  }
 
-    const size_t layersCount = _layers.size();
-    double biggestArea = 0;
+  if (biggestDataSector != NULL) {
+    bool dataSectorsInconsistency = false;
     for (size_t i = 0; i < layersCount; i++) {
       Layer* layer = _layers[i];
       if (layer->isEnable()) {
-        const double layerArea = layer->getDataSector().getAngularAreaInSquaredDegrees();
-        if (layerArea > biggestArea) {
-          delete biggestDataSector;
-          biggestDataSector = new Sector(layer->getDataSector());
-          biggestArea = layerArea;
+        if (!biggestDataSector->fullContains(layer->getDataSector())) {
+          dataSectorsInconsistency = true;
+          break;
         }
       }
     }
 
-    if (biggestDataSector != NULL) {
-      bool dataSectorsInconsistency = false;
-      for (size_t i = 0; i < layersCount; i++) {
-        Layer* layer = _layers[i];
-        if (layer->isEnable()) {
-          if (!biggestDataSector->fullContains(layer->getDataSector())) {
-            dataSectorsInconsistency = true;
-            break;
-          }
-        }
-      }
+    delete biggestDataSector;
 
-      delete biggestDataSector;
-
-      if (dataSectorsInconsistency) {
-        errors.push_back("Inconsistency in layers data sectors");
-        return false;
-      }
+    if (dataSectorsInconsistency) {
+      errors.push_back("Inconsistency in layers data sectors");
+      return false;
     }
   }
 
@@ -284,10 +284,10 @@ private:
   int     _topSectorSplitsByLongitude;
   int     _firstLevel;
   int     _maxLevel;
-  int     _tileTextureWidth;
-  int     _tileTextureHeight;
-  short     _tileMeshWidth;
-  short     _tileMeshHeight;
+  short   _tileTextureWidth;
+  short   _tileTextureHeight;
+  short   _tileMeshWidth;
+  short   _tileMeshHeight;
   bool    _mercator;
 
 public:
@@ -412,15 +412,14 @@ public:
                                           _topSectorSplitsByLongitude,
                                           _firstLevel,
                                           _maxLevel,
-                                          Vector2I(_tileTextureWidth, _tileTextureHeight),
+                                          Vector2S(_tileTextureWidth, _tileTextureHeight),
                                           Vector2S(_tileMeshWidth,    _tileMeshHeight),
                                           _mercator);
   }
 };
 
 
-LayerTilesRenderParameters* LayerSet::checkAndComposeLayerTilesRenderParameters(const bool forceFirstLevelTilesRenderOnStart,
-                                                                                const std::vector<Layer*>& enableLayers,
+LayerTilesRenderParameters* LayerSet::checkAndComposeLayerTilesRenderParameters(const std::vector<Layer*>& enableLayers,
                                                                                 std::vector<std::string>& errors) const {
 
   MutableLayerTilesRenderParameters mutableLayerTilesRenderParameters;
@@ -452,15 +451,14 @@ LayerTilesRenderParameters* LayerSet::checkAndComposeLayerTilesRenderParameters(
       return NULL;
     }
   }
-  
+
   return mutableLayerTilesRenderParameters.create(errors);
 }
 
 
-LayerTilesRenderParameters* LayerSet::createLayerTilesRenderParameters(const bool forceFirstLevelTilesRenderOnStart,
-                                                                       std::vector<std::string>& errors) const {
+LayerTilesRenderParameters* LayerSet::createLayerTilesRenderParameters(std::vector<std::string>& errors) const {
 
-  if (!checkLayersDataSector(forceFirstLevelTilesRenderOnStart, errors)) {
+  if (!checkLayersDataSector(errors)) {
     return NULL;
   }
 
@@ -469,7 +467,7 @@ LayerTilesRenderParameters* LayerSet::createLayerTilesRenderParameters(const boo
     return NULL;
   }
 
-  return checkAndComposeLayerTilesRenderParameters(forceFirstLevelTilesRenderOnStart, enableLayers, errors);
+  return checkAndComposeLayerTilesRenderParameters(enableLayers, errors);
 }
 
 void LayerSet::takeLayersFrom(LayerSet* that) {
@@ -515,7 +513,7 @@ TileImageProvider* LayerSet::createTileImageProvider(const G3MRenderContext* rc,
       }
     }
   }
-  
+
   return (compositeTileImageProvider == NULL) ? singleTileImageProvider : compositeTileImageProvider;
 }
 

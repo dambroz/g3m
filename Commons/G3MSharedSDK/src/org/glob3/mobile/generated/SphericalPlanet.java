@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  SphericalPlanet.cpp
 //  G3MiOSSDK
@@ -12,6 +12,7 @@ package org.glob3.mobile.generated;
 //
 //  Created by Diego Gomez Deck on 31/05/12.
 //
+
 
 
 
@@ -37,7 +38,7 @@ public class SphericalPlanet extends Planet
 
   public static Planet createEarth()
   {
-    return new SphericalPlanet(new Sphere(Vector3D.zero, 6378137.0));
+    return new SphericalPlanet(new Sphere(Vector3D.ZERO, 6378137.0));
   }
 
   public SphericalPlanet(Sphere sphere)
@@ -48,7 +49,7 @@ public class SphericalPlanet extends Planet
 
   public void dispose()
   {
-  super.dispose();
+    super.dispose();
   }
 
   public final Vector3D getRadii()
@@ -71,12 +72,11 @@ public class SphericalPlanet extends Planet
     return position.normalized().asVector3D();
   }
 
-
   public final Vector3D geodeticSurfaceNormal(Angle latitude, Angle longitude)
   {
-    final double cosLatitude = java.lang.Math.cos(latitude._radians);
+    final double cosLatitude = Math.cos(latitude._radians);
   
-    return new Vector3D(cosLatitude * java.lang.Math.cos(longitude._radians), cosLatitude * java.lang.Math.sin(longitude._radians), java.lang.Math.sin(latitude._radians));
+    return new Vector3D(cosLatitude * Math.cos(longitude._radians), cosLatitude * Math.sin(longitude._radians), Math.sin(latitude._radians));
   }
 
   public final Vector3D geodeticSurfaceNormal(Geodetic3D geodetic)
@@ -91,9 +91,9 @@ public class SphericalPlanet extends Planet
 
   public final void geodeticSurfaceNormal(Angle latitude, Angle longitude, MutableVector3D result)
   {
-    final double cosLatitude = java.lang.Math.cos(latitude._radians);
+    final double cosLatitude = Math.cos(latitude._radians);
   
-    result.set(cosLatitude * java.lang.Math.cos(longitude._radians), cosLatitude * java.lang.Math.sin(longitude._radians), java.lang.Math.sin(latitude._radians));
+    result.set(cosLatitude * Math.cos(longitude._radians), cosLatitude * Math.sin(longitude._radians), Math.sin(latitude._radians));
   }
 
   public final java.util.ArrayList<Double> intersectionsDistances(double originX, double originY, double originZ, double directionX, double directionY, double directionZ)
@@ -177,7 +177,6 @@ public class SphericalPlanet extends Planet
   {
     toCartesian(geodetic._latitude, geodetic._longitude, geodetic._height, result);
   }
-
   public final void toCartesian(Geodetic2D geodetic, MutableVector3D result)
   {
     toCartesian(geodetic._latitude, geodetic._longitude, 0, result);
@@ -357,11 +356,10 @@ public class SphericalPlanet extends Planet
     return result;
   }
 
-  public final MutableMatrix44D createGeodeticTransformMatrix(Geodetic3D position)
+  public final MutableMatrix44D createGeodeticTransformMatrix(Angle latitude, Angle longitude, double height)
   {
-    final MutableMatrix44D translation = MutableMatrix44D.createTranslationMatrix(toCartesian(position));
-    final MutableMatrix44D rotation = MutableMatrix44D.createGeodeticRotationMatrix(position);
-  
+    final MutableMatrix44D translation = MutableMatrix44D.createTranslationMatrix(toCartesian(latitude, longitude, height));
+    final MutableMatrix44D rotation = MutableMatrix44D.createGeodeticRotationMatrix(latitude, longitude);
     return translation.multiply(rotation);
   }
 
@@ -624,10 +622,10 @@ public class SphericalPlanet extends Planet
 
   public final Vector3D getNorth()
   {
-    return Vector3D.upZ();
+    return Vector3D.UP_Z;
   }
 
-  public final void applyCameraConstrainers(Camera previousCamera, Camera nextCamera)
+  public final void applyCameraConstrains(Camera previousCamera, Camera nextCamera)
   {
   
   }
@@ -637,7 +635,7 @@ public class SphericalPlanet extends Planet
     final Vector3D asw = toCartesian(rendereSector.getSW());
     final Vector3D ane = toCartesian(rendereSector.getNE());
     final double height = asw.sub(ane).length() * 1.9;
-
+  
     return new Geodetic3D(rendereSector._center, height);
   }
 

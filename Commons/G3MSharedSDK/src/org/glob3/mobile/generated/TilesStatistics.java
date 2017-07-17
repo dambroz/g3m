@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  PlanetRenderer.cpp
 //  G3MiOSSDK
@@ -27,6 +27,8 @@ package org.glob3.mobile.generated;
 //class LayerTilesRenderParameters;
 //class Layer;
 //class TerrainTouchListener;
+//class DEMProvider;
+//class IStringBuilder;
 
 
 public class TilesStatistics
@@ -35,25 +37,32 @@ public class TilesStatistics
   private int _tilesVisible;
   private int _tilesRendered;
 
-  private static final int _maxLOD = 128;
+  private static final int MAX_LEVEL = 64;
 
-  private int[] _tilesProcessedByLevel = new int[_maxLOD];
-  private int[] _tilesVisibleByLevel = new int[_maxLOD];
-  private int[] _tilesRenderedByLevel = new int[_maxLOD];
+  private int[] _tilesProcessedByLevel = new int[MAX_LEVEL];
+  private int[] _tilesVisibleByLevel = new int[MAX_LEVEL];
+  private int[] _tilesRenderedByLevel = new int[MAX_LEVEL];
 
   private double _visibleLowerLatitudeDegrees;
   private double _visibleLowerLongitudeDegrees;
   private double _visibleUpperLatitudeDegrees;
   private double _visibleUpperLongitudeDegrees;
 
+  private String _previousStatistics;
+  private IStringBuilder _statisticsSB;
+
 
   public TilesStatistics()
   {
+     _previousStatistics = "";
+     _statisticsSB = null;
     clear();
   }
 
   public void dispose()
   {
+    if (_statisticsSB != null)
+       _statisticsSB.dispose();
   }
 
   public final void clear()
@@ -61,14 +70,14 @@ public class TilesStatistics
     _tilesProcessed = 0;
     _tilesVisible = 0;
     _tilesRendered = 0;
-
+  
     final IMathUtils mu = IMathUtils.instance();
     _visibleLowerLatitudeDegrees = mu.maxDouble();
     _visibleLowerLongitudeDegrees = mu.maxDouble();
     _visibleUpperLatitudeDegrees = mu.minDouble();
     _visibleUpperLongitudeDegrees = mu.minDouble();
-
-    for (int i = 0; i < _maxLOD; i++)
+  
+    for (int i = 0; i < MAX_LEVEL; i++)
     {
       _tilesProcessedByLevel[i] = 0;
       _tilesVisibleByLevel[i] = 0;
@@ -179,7 +188,7 @@ public class TilesStatistics
         isb.addInt(counter);
       }
     }
-
+  
     String s = isb.getString();
     if (isb != null)
        isb.dispose();
@@ -188,8 +197,33 @@ public class TilesStatistics
 
   public final void log(ILogger logger)
   {
-    logger.logInfo("Tiles processed:%d (%s), visible:%d (%s), rendered:%d (%s).", _tilesProcessed, asLogString(_tilesProcessedByLevel, _maxLOD), _tilesVisible, asLogString(_tilesVisibleByLevel, _maxLOD), _tilesRendered, asLogString(_tilesRenderedByLevel, _maxLOD));
+    if (_statisticsSB == null)
+    {
+      _statisticsSB = IStringBuilder.newStringBuilder();
+    }
+    else
+    {
+      _statisticsSB.clear();
+    }
+    _statisticsSB.addString("Tiles processed:");
+    _statisticsSB.addLong(_tilesProcessed);
+    _statisticsSB.addString(" (");
+    _statisticsSB.addString(asLogString(_tilesProcessedByLevel, MAX_LEVEL));
+    _statisticsSB.addString("), visible:");
+    _statisticsSB.addLong(_tilesVisible);
+    _statisticsSB.addString(" (");
+    _statisticsSB.addString(asLogString(_tilesVisibleByLevel, MAX_LEVEL));
+    _statisticsSB.addString("), rendered:");
+    _statisticsSB.addLong(_tilesRendered);
+    _statisticsSB.addString(" (");
+    _statisticsSB.addString(asLogString(_tilesRenderedByLevel, MAX_LEVEL));
+    _statisticsSB.addString(").");
+  
+    if (!_statisticsSB.contentEqualsTo(_previousStatistics))
+    {
+      _previousStatistics = _statisticsSB.getString();
+      logger.logInfo(_previousStatistics);
+    }
   }
-
 
 }

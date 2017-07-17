@@ -7,3 +7,9 @@
 //
 
 #include "LeveledMesh.hpp"
+
+#include "Vector3D.hpp"
+
+const Vector3D LeveledMesh::getVertex(const size_t index) const {
+  return _mesh->getVertex(index);
+}

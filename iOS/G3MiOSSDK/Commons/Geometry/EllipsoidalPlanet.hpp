@@ -9,20 +9,16 @@
 #ifndef G3MiOSSDK_EllipsoidalPlanet
 #define G3MiOSSDK_EllipsoidalPlanet
 
-#include <vector>
-#include <list>
-
-#include "Vector3D.hpp"
 #include "Planet.hpp"
 
-#include "MutableVector3D.hpp"
+#include <list>
 
 #include "Ellipsoid.hpp"
-#include "Sector.hpp"
+#include "MutableVector3D.hpp"
 
-class EllipsoidalPlanet: public Planet {
+
+class EllipsoidalPlanet : public Planet {
 private:
-
 #ifdef C_CODE
   const Ellipsoid _ellipsoid;
 #endif
@@ -74,13 +70,9 @@ public:
   Vector3D geodeticSurfaceNormal(const Angle& latitude,
                                  const Angle& longitude) const;
 
-  Vector3D geodeticSurfaceNormal(const Geodetic3D& geodetic) const {
-    return geodeticSurfaceNormal(geodetic._latitude, geodetic._longitude);
-  }
+  Vector3D geodeticSurfaceNormal(const Geodetic3D& geodetic) const;
 
-  Vector3D geodeticSurfaceNormal(const Geodetic2D& geodetic) const {
-    return geodeticSurfaceNormal(geodetic._latitude, geodetic._longitude);
-  }
+  Vector3D geodeticSurfaceNormal(const Geodetic2D& geodetic) const;
 
   void geodeticSurfaceNormal(const Angle& latitude,
                              const Angle& longitude,
@@ -104,24 +96,12 @@ public:
                        const Angle& longitude,
                        const double height) const;
 
-  Vector3D toCartesian(const Geodetic3D& geodetic) const {
-    return toCartesian(geodetic._latitude,
-                       geodetic._longitude,
-                       geodetic._height);
-  }
+  Vector3D toCartesian(const Geodetic3D& geodetic) const;
 
-  Vector3D toCartesian(const Geodetic2D& geodetic) const {
-    return toCartesian(geodetic._latitude,
-                       geodetic._longitude,
-                       0.0);
-  }
+  Vector3D toCartesian(const Geodetic2D& geodetic) const;
 
   Vector3D toCartesian(const Geodetic2D& geodetic,
-                       const double height) const {
-    return toCartesian(geodetic._latitude,
-                       geodetic._longitude,
-                       height);
-  }
+                       const double height) const;
 
   void toCartesian(const Angle& latitude,
                    const Angle& longitude,
@@ -129,28 +109,13 @@ public:
                    MutableVector3D& result) const;
 
   void toCartesian(const Geodetic3D& geodetic,
-                   MutableVector3D& result) const {
-    toCartesian(geodetic._latitude,
-                geodetic._longitude,
-                geodetic._height,
-                result);
-  }
+                   MutableVector3D& result) const;
 
   void toCartesian(const Geodetic2D& geodetic,
-                   MutableVector3D& result) const {
-    toCartesian(geodetic._latitude,
-                geodetic._longitude,
-                0,
-                result);
-  }
+                   MutableVector3D& result) const;
   void toCartesian(const Geodetic2D& geodetic,
                    const double height,
-                   MutableVector3D& result) const {
-    toCartesian(geodetic._latitude,
-                geodetic._longitude,
-                height,
-                result);
-  }
+                   MutableVector3D& result) const;
 
   Geodetic2D toGeodetic2D(const Vector3D& positionOnEllipsoidalPlanet) const;
 
@@ -175,7 +140,9 @@ public:
 
   Vector3D closestPointToSphere(const Vector3D& pos, const Vector3D& ray) const;
 
-  MutableMatrix44D createGeodeticTransformMatrix(const Geodetic3D& position) const;
+  MutableMatrix44D createGeodeticTransformMatrix(const Angle& latitude,
+                                                 const Angle& longitude,
+                                                 const double height) const;
 
   bool isFlat() const { return false; }
 
@@ -202,20 +169,13 @@ public:
   MutableMatrix44D drag(const Geodetic3D& origin, const Geodetic3D& destination) const;
 
   Vector3D getNorth() const {
-    return Vector3D::upZ();
+    return Vector3D::UP_Z;
   }
 
-  void applyCameraConstrainers(const Camera* previousCamera,
-                               Camera* nextCamera) const;
+  void applyCameraConstrains(const Camera* previousCamera,
+                             Camera* nextCamera) const;
 
-  Geodetic3D getDefaultCameraPosition(const Sector& rendereSector) const {
-    const Vector3D asw = toCartesian(rendereSector.getSW());
-    const Vector3D ane = toCartesian(rendereSector.getNE());
-    const double height = asw.sub(ane).length() * 1.9;
-
-    return Geodetic3D(rendereSector._center,
-                      height);
-  }
+  Geodetic3D getDefaultCameraPosition(const Sector& rendereSector) const;
   
   const std::string getType() const {
     return "Ellipsoidal";

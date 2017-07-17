@@ -25,6 +25,14 @@ private:
   mutable Mesh* _mesh;
   Mesh* createMesh(const Color& color) const;
 
+  explicit Box(const Box& that) :
+  _lower(that._lower),
+  _upper(that._upper),
+  _mesh(NULL)
+  {
+  }
+
+
 public:
   const Vector3D _lower;
   const Vector3D _upper;
@@ -78,7 +86,7 @@ public:
 
   BoundingVolume* mergedWith(const BoundingVolume* that) const {
     if (that == NULL) {
-      return NULL;
+      return new Box(*this);
     }
     return that->mergedWithBox(this);
   }
@@ -119,6 +127,8 @@ public:
 #endif
 
   const std::string description() const;
+
+  Box* copy() const;
 
 };
 

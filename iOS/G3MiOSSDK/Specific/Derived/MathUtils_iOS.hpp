@@ -34,15 +34,14 @@ public:
   static inline double log_  (double v)           { return log(v);     }
   static inline double floor_(double d)           { return floor(d);   }
   static inline double ceil_ (double d)           { return ceil(d);    }
-  static inline double fmod_ (double d1, double d2) { return fmod(d1, d2);}
 };
 
 class MathUtils_iOS: public IMathUtils {
 
 public:
 
-//  double NanD() const { return NAN;}
-//  float NanF() const { return NAN; }
+  //  double NanD() const { return NAN;}
+  //  float NanF() const { return NAN; }
 
   double sin(double v) const { return MathAux::sin_(v); }
   float  sin(float v)  const { return sinf(v); }
@@ -88,7 +87,7 @@ public:
   float  log10(float v)  const { return log10f(v); }
 
   double log(double v) const { return MathAux::log_(v); }
-  float  log(float v)  const { return log(v); }
+  float  log(float v)  const { return (float) log( (double) v); }
 
   short maxInt16() const { return std::numeric_limits<short>::max(); }
   short minInt16() const { return -(std::numeric_limits<short>::max()); }
@@ -178,19 +177,23 @@ public:
   float ceil(float f) const {
     return ceilf(f);
   }
-  
-  double fmod(double d1, double d2) const {
-    return MathAux::fmod_(d1, d2);
+
+  double mod(double d1, double d2) const {
+    return fmod(d1, d2);
   }
-  
-  float fmod(float f1, float f2) const {
+
+  float mod(float f1, float f2) const {
     return fmodf(f1, f2);
   }
 
   double nextRandomDouble() const {
     return (double)rand() / RAND_MAX;
   }
-
+  
+  double copySign(double a, double b) const {
+    return copysign(a, b);
+  }
+  
 };
 
 #endif

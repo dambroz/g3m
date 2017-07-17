@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Box.cpp
 //  G3MiOSSDK
@@ -51,6 +51,14 @@ public class Box extends BoundingVolume
   
     return mesh;
   }
+
+  private Box(Box that)
+  {
+     _lower = new Vector3D(that._lower);
+     _upper = new Vector3D(that._upper);
+     _mesh = null;
+  }
+
 
   public final Vector3D _lower ;
   public final Vector3D _upper ;
@@ -267,7 +275,7 @@ public class Box extends BoundingVolume
          return inter;
     }
   
-    return Vector3D.nan();
+    return Vector3D.NANV;
   }
 
   public final void render(G3MRenderContext rc, GLState parentState, Color color)
@@ -325,7 +333,7 @@ public class Box extends BoundingVolume
   {
     if (that == null)
     {
-      return null;
+      return new Box(this);
     }
     return that.mergedWithBox(this);
   }
@@ -425,6 +433,11 @@ public class Box extends BoundingVolume
     if (isb != null)
        isb.dispose();
     return s;
+  }
+
+  public final Box copy()
+  {
+    return new Box(this);
   }
 
 }

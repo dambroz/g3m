@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  URL.cpp
 //  G3MiOSSDK
@@ -97,7 +97,7 @@ public class URL
   {
   }
 
-//  std::string getPath() const {
+//  const std::string getPath() const {
 //    return _path;
 //  }
 

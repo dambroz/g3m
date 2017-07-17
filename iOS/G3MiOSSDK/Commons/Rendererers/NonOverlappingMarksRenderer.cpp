@@ -35,6 +35,7 @@
 #include "TouchEvent.hpp"
 #include "RectangleF.hpp"
 #include "IDeviceInfo.hpp"
+#include "G3MRenderContext.hpp"
 
 
 MarkWidget::MarkWidget(IImageBuilder* imageBuilder):
@@ -50,6 +51,10 @@ _halfWidth(0),
 _vertices(NULL),
 _textureMapping(NULL)
 {
+}
+
+void MarkWidget::WidgetImageListener::onError(const std::string& error) {
+  ILogger::instance()->logError(error);
 }
 
 MarkWidget::~MarkWidget() {
@@ -80,7 +85,6 @@ void MarkWidget::init(const G3MRenderContext* rc) {
 void MarkWidget::prepareWidget(const IImage* image,
                                const std::string& imageName) {
   _image     = image;
-  _imageName = imageName;
 
   _halfWidth  = (float) image->getWidth()  / 2.0f;
   _halfHeight = (float) image->getHeight() / 2.0f;
@@ -120,7 +124,7 @@ void MarkWidget::prepareWidget(const IImage* image,
 
   const TextureIDReference* textureID = _texHandler->getTextureIDReference(_image,
                                                                            GLFormat::rgba(),
-                                                                           _imageName,
+                                                                           imageName,
                                                                            false);
 
   // #warning TODO: share unit texCoords
@@ -337,7 +341,7 @@ void NonOverlappingMark::renderSpringWidget(const G3MRenderContext* rc,
   if (_springGLState == NULL) {
     _springGLState = new GLState();
 
-    _springGLState->addGLFeature(new FlatColorGLFeature(Color::black()), false);
+    _springGLState->addGLFeature(new FlatColorGLFeature(Color::BLACK), false);
 
     _springVertices = rc->getFactory()->createFloatBuffer(2 * 2);
     _springVertices->rawPut(0,  sp._x);

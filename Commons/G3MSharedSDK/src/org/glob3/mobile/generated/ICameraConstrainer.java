@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  ICameraConstrainer.cpp
 //  G3MiOSSDK
@@ -18,6 +18,7 @@ package org.glob3.mobile.generated;
 
 //class Planet;
 //class Camera;
+
 
 public interface ICameraConstrainer
 {

@@ -7,12 +7,102 @@
 
 #include "MutableMatrix44D.hpp"
 
+#include "Matrix44D.hpp"
 #include "Frustum.hpp"
 #include "MutableVector3D.hpp"
 #include "Vector2D.hpp"
 #include "IFloatBuffer.hpp"
 #include "Vector3F.hpp"
 #include "Vector2F.hpp"
+#include "IStringBuilder.hpp"
+#include "Geodetic2D.hpp"
+#include "Geodetic3D.hpp"
+#include "IMathUtils.hpp"
+#include "ILogger.hpp"
+#include "FrustumData.hpp"
+
+
+MutableMatrix44D MutableMatrix44D::TEMP1;
+MutableMatrix44D MutableMatrix44D::TEMP2;
+
+
+MutableMatrix44D::MutableMatrix44D(const MutableMatrix44D &m):
+_isValid(m._isValid)
+{
+  _m00 = m._m00;
+  _m01 = m._m01;
+  _m02 = m._m02;
+  _m03 = m._m03;
+
+  _m10 = m._m10;
+  _m11 = m._m11;
+  _m12 = m._m12;
+  _m13 = m._m13;
+
+  _m20 = m._m20;
+  _m21 = m._m21;
+  _m22 = m._m22;
+  _m23 = m._m23;
+
+  _m30 = m._m30;
+  _m31 = m._m31;
+  _m32 = m._m32;
+  _m33 = m._m33;
+
+  _matrix44D = m._matrix44D;
+  if (_matrix44D != NULL) {
+    _matrix44D->_retain();
+  }
+}
+
+MutableMatrix44D::MutableMatrix44D(const Matrix44D &m):
+_isValid(true),
+_matrix44D(NULL)
+{
+  _m00 = m._m00;
+  _m01 = m._m01;
+  _m02 = m._m02;
+  _m03 = m._m03;
+
+  _m10 = m._m10;
+  _m11 = m._m11;
+  _m12 = m._m12;
+  _m13 = m._m13;
+
+  _m20 = m._m20;
+  _m21 = m._m21;
+  _m22 = m._m22;
+  _m23 = m._m23;
+
+  _m30 = m._m30;
+  _m31 = m._m31;
+  _m32 = m._m32;
+  _m33 = m._m33;
+}
+
+Matrix44D* MutableMatrix44D::asMatrix44D() const {
+  if (_matrix44D == NULL) {
+    _matrix44D = new Matrix44D(_m00, _m10, _m20, _m30,
+                               _m01, _m11, _m21, _m31,
+                               _m02, _m12, _m22, _m32,
+                               _m03, _m13, _m23, _m33);
+  }
+  return _matrix44D;
+}
+
+const std::string MutableMatrix44D::description() const {
+  IStringBuilder* isb = IStringBuilder::newStringBuilder();
+  isb->addString("MUTABLE MATRIX 44D: ");
+  float* f = asMatrix44D()->getColumnMajorFloatArray();
+  for (int i = 0; i < 16; i++) {
+    isb->addDouble(f[i]);
+    if (i < 15) isb->addString(", ");
+  }
+  const std::string s = isb->getString();
+  delete isb;
+  return s;
+}
+
 
 
 MutableMatrix44D& MutableMatrix44D::operator=(const MutableMatrix44D &that) {
@@ -125,6 +215,77 @@ void MutableMatrix44D::copyValueOfMultiplication(const MutableMatrix44D& m1, con
   }
 }
 
+
+void MutableMatrix44D::multiplyInPlace(const MutableMatrix44D& that) {
+  if (that.isIdentity()) {
+    return;
+  }
+
+  const double that00 = that._m00;
+  const double that10 = that._m10;
+  const double that20 = that._m20;
+  const double that30 = that._m30;
+
+  const double that01 = that._m01;
+  const double that11 = that._m11;
+  const double that21 = that._m21;
+  const double that31 = that._m31;
+
+  const double that02 = that._m02;
+  const double that12 = that._m12;
+  const double that22 = that._m22;
+  const double that32 = that._m32;
+
+  const double that03 = that._m03;
+  const double that13 = that._m13;
+  const double that23 = that._m23;
+  const double that33 = that._m33;
+
+  //Rows of this X Columns of that
+  const double m00 = (_m00 * that00) + (_m01 * that10) + (_m02 * that20) + (_m03 * that30);
+  const double m01 = (_m00 * that01) + (_m01 * that11) + (_m02 * that21) + (_m03 * that31);
+  const double m02 = (_m00 * that02) + (_m01 * that12) + (_m02 * that22) + (_m03 * that32);
+  const double m03 = (_m00 * that03) + (_m01 * that13) + (_m02 * that23) + (_m03 * that33);
+
+  const double m10 = (_m10 * that00) + (_m11 * that10) + (_m12 * that20) + (_m13 * that30);
+  const double m11 = (_m10 * that01) + (_m11 * that11) + (_m12 * that21) + (_m13 * that31);
+  const double m12 = (_m10 * that02) + (_m11 * that12) + (_m12 * that22) + (_m13 * that32);
+  const double m13 = (_m10 * that03) + (_m11 * that13) + (_m12 * that23) + (_m13 * that33);
+
+  const double m20 = (_m20 * that00) + (_m21 * that10) + (_m22 * that20) + (_m23 * that30);
+  const double m21 = (_m20 * that01) + (_m21 * that11) + (_m22 * that21) + (_m23 * that31);
+  const double m22 = (_m20 * that02) + (_m21 * that12) + (_m22 * that22) + (_m23 * that32);
+  const double m23 = (_m20 * that03) + (_m21 * that13) + (_m22 * that23) + (_m23 * that33);
+
+  const double m30 = (_m30 * that00) + (_m31 * that10) + (_m32 * that20) + (_m33 * that30);
+  const double m31 = (_m30 * that01) + (_m31 * that11) + (_m32 * that21) + (_m33 * that31);
+  const double m32 = (_m30 * that02) + (_m31 * that12) + (_m32 * that22) + (_m33 * that32);
+  const double m33 = (_m30 * that03) + (_m31 * that13) + (_m32 * that23) + (_m33 * that33);
+
+  _m00  = m00;
+  _m01  = m01;
+  _m02  = m02;
+  _m03  = m03;
+
+  _m10  = m10;
+  _m11  = m11;
+  _m12  = m12;
+  _m13  = m13;
+
+  _m20  = m20;
+  _m21  = m21;
+  _m22  = m22;
+  _m23  = m23;
+
+  _m30  = m30;
+  _m31  = m31;
+  _m32  = m32;
+  _m33  = m33;
+
+  _matrix44D = NULL;
+}
+
+
 MutableMatrix44D MutableMatrix44D::multiply(const MutableMatrix44D &that) const {
 
   if (this->isIdentity()) {
@@ -182,23 +343,23 @@ MutableMatrix44D MutableMatrix44D::multiply(const MutableMatrix44D &that) const 
 }
 
 MutableMatrix44D MutableMatrix44D::createProjectionMatrix(const FrustumData& data) {
-  return createProjectionMatrix(data._left, data._right,
+  return createProjectionMatrix(data._left,   data._right,
                                 data._bottom, data._top,
-                                data._znear, data._zfar);
+                                data._zNear,  data._zFar);
 }
 
 MutableMatrix44D MutableMatrix44D::createProjectionMatrix(double left, double right,
                                                           double bottom, double top,
-                                                          double znear, double zfar) {
+                                                          double zNear, double zFar) {
   // set frustum MutableMatrix44D in double
   const double rl = right - left;
   const double tb = top - bottom;
-  const double fn = zfar - znear;
+  const double fn = zFar - zNear;
 
-  return MutableMatrix44D(2 * znear / rl, 0, 0, 0,
-                          0, 2 * znear / tb, 0, 0,
-                          (right + left) / rl, (top + bottom) / tb, -(zfar + znear) / fn, -1,
-                          0, 0, -2 * zfar / fn * znear, 0);
+  return MutableMatrix44D(2 * zNear / rl, 0, 0, 0,
+                          0, 2 * zNear / tb, 0, 0,
+                          (right + left) / rl, (top + bottom) / tb, -(zFar + zNear) / fn, -1,
+                          0, 0, -2 * zFar / fn * zNear, 0);
 
 }
 
@@ -294,7 +455,7 @@ Vector3D MutableMatrix44D::unproject(const Vector3D& pixel3D,
   const double out3 = m._m30 * in0 + m._m31 * in1 + m._m32 * in2 + m._m33 * in3;
 
   if (out3 == 0.0) {
-    return Vector3D::nan();
+    return Vector3D::NANV;
   }
 
   const double objx = out0 / out3;
@@ -395,8 +556,23 @@ MutableMatrix44D MutableMatrix44D::createRotationMatrix(const Angle& angle,
                           0, 0, 0, 1);
 }
 
+void MutableMatrix44D::createRotationMatrix(const Angle& angle,
+                                            const Vector3D& axis,
+                                            MutableMatrix44D& result) {
+  const Vector3D a = axis.normalized();
+
+  const double c = COS(angle._radians);
+  const double s = SIN(angle._radians);
+
+  result.setValue(a._x * a._x * (1 - c) + c, a._x * a._y * (1 - c) + a._z * s, a._x * a._z * (1 - c) - a._y * s, 0,
+                  a._y * a._x * (1 - c) - a._z * s, a._y * a._y * (1 - c) + c, a._y * a._z * (1 - c) + a._x * s, 0,
+                  a._x * a._z * (1 - c) + a._y * s, a._y * a._z * (1 - c) - a._x * s, a._z * a._z * (1 - c) + c, 0,
+                  0, 0, 0, 1);
+}
+
 MutableMatrix44D MutableMatrix44D::createGeneralRotationMatrix(const Angle& angle,
-                                                               const Vector3D& axis, const Vector3D& point) {
+                                                               const Vector3D& axis,
+                                                               const Vector3D& point) {
   const MutableMatrix44D T1 = MutableMatrix44D::createTranslationMatrix(point.times(-1.0));
   const MutableMatrix44D R  = MutableMatrix44D::createRotationMatrix(angle, axis);
   const MutableMatrix44D T2 = MutableMatrix44D::createTranslationMatrix(point);
@@ -419,16 +595,16 @@ MutableMatrix44D MutableMatrix44D::createModelMatrix(const MutableVector3D& pos,
 
 MutableMatrix44D MutableMatrix44D::createOrthographicProjectionMatrix(double left, double right,
                                                                       double bottom, double top,
-                                                                      double znear, double zfar) {
+                                                                      double zNear, double zFar) {
   // set frustum MutableMatrix44D in double
   const double rl = right - left;
   const double tb = top - bottom;
-  const double fn = zfar - znear;
+  const double fn = zFar - zNear;
 
   return MutableMatrix44D(2 / rl, 0, 0, 0,
                           0, 2 / tb, 0, 0,
                           0, 0, -2 / fn, 0,
-                          -(right+left) / rl, -(top+bottom) / tb, -(zfar+znear) / fn, 1 );
+                          -(right+left) / rl, -(top+bottom) / tb, -(zFar+zNear) / fn, 1 );
 }
 
 MutableMatrix44D MutableMatrix44D::createScaleMatrix(const Vector3D& scale) {
@@ -448,13 +624,11 @@ MutableMatrix44D MutableMatrix44D::createGeodeticRotationMatrix(const Angle& lat
                                                           0, 0, 0, 1);
 
   // orbit reference system to geodetic position
-  const MutableMatrix44D longitudeRotation = MutableMatrix44D::createRotationMatrix(longitude, Vector3D::upY());
-  const MutableMatrix44D latitudeRotation  = MutableMatrix44D::createRotationMatrix(latitude,  Vector3D::downX());
+  const MutableMatrix44D longitudeRotation = MutableMatrix44D::createRotationMatrix(longitude, Vector3D::UP_Y);
+  const MutableMatrix44D latitudeRotation  = MutableMatrix44D::createRotationMatrix(latitude,  Vector3D::DOWN_X);
 
   return changeReferenceCoordinatesSystem.multiply(longitudeRotation).multiply(latitudeRotation);
 }
-
-
 
 void MutableMatrix44D::copyValue(const MutableMatrix44D &m) {
   //  if (isEquals(m)) {
@@ -490,9 +664,42 @@ void MutableMatrix44D::copyValue(const MutableMatrix44D &m) {
   if (_matrix44D != NULL) {
     _matrix44D->_release();
   }
-  
+
   _matrix44D = m._matrix44D;
   if (_matrix44D != NULL) {
     _matrix44D->_retain();
   }
+}
+
+MutableMatrix44D MutableMatrix44D::createGeodeticRotationMatrix(const Geodetic2D& position) {
+  return MutableMatrix44D::createGeodeticRotationMatrix(position._latitude,
+                                                        position._longitude);
+}
+
+MutableMatrix44D MutableMatrix44D::createGeodeticRotationMatrix(const Geodetic3D& position) {
+  return MutableMatrix44D::createGeodeticRotationMatrix(position._latitude,
+                                                        position._longitude);
+}
+
+void MutableMatrix44D::createRawGeodeticRotationMatrix(const Geodetic2D& position,
+                                                       MutableMatrix44D& result) {
+  createRawGeodeticRotationMatrix(position._latitude,
+                                  position._longitude,
+                                  result);
+}
+
+void MutableMatrix44D::createRawGeodeticRotationMatrix(const Geodetic3D& position,
+                                                       MutableMatrix44D& result) {
+  createRawGeodeticRotationMatrix(position._latitude,
+                                  position._longitude,
+                                  result);
+}
+
+void MutableMatrix44D::createRawGeodeticRotationMatrix(const Angle& latitude,
+                                                       const Angle& longitude,
+                                                       MutableMatrix44D& result) {
+  createRotationMatrix(latitude,  Vector3D::DOWN_Y, TEMP1); // latitudeRotation
+  createRotationMatrix(longitude, Vector3D::UP_Z,   TEMP2); // longitudeRotation
+  
+  result.copyValueOfMultiplication(TEMP2, TEMP1);
 }

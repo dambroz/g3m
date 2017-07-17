@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  MutableVector3D.cpp
 //  G3MiOSSDK
@@ -14,17 +14,16 @@ package org.glob3.mobile.generated;
 //
 
 
-
-
 //class Vector3D;
+//class Angle;
+//class MutableMatrix44D;
+
 
 public class MutableVector3D
 {
   private double _x;
   private double _y;
   private double _z;
-
-//  MutableVector3D& operator=(const MutableVector3D& that);
 
 
 
@@ -84,15 +83,15 @@ public class MutableVector3D
   }
   public final void normalize()
   {
-      final double d = length();
-      _x /= d;
-      _y /= d;
-      _z /= d;
+    final double d = length();
+    _x /= d;
+    _y /= d;
+    _z /= d;
   }
 
   public static MutableVector3D nan()
   {
-    return new MutableVector3D(java.lang.Double.NaN, java.lang.Double.NaN, java.lang.Double.NaN);
+    return new MutableVector3D(Double.NaN, Double.NaN, Double.NaN);
   }
 
   public final boolean equalTo(MutableVector3D v)
@@ -204,10 +203,10 @@ public class MutableVector3D
     final double v = axis.y();
     final double w = axis.z();
   
-  //  const double cosTheta = theta.cosinus();
-  //  const double sinTheta = theta.sinus();
-    final double cosTheta = java.lang.Math.cos(theta._radians);
-    final double sinTheta = java.lang.Math.sin(theta._radians);
+    //  const double cosTheta = theta.cosinus();
+    //  const double sinTheta = theta.sinus();
+    final double cosTheta = Math.cos(theta._radians);
+    final double sinTheta = Math.sin(theta._radians);
   
     final double ms = axis.squaredLength();
     final double m = IMathUtils.instance().sqrt(ms);
@@ -282,8 +281,8 @@ public class MutableVector3D
     final double v = axis._y;
     final double w = axis._z;
   
-    final double cosTheta = java.lang.Math.cos(theta._radians);
-    final double sinTheta = java.lang.Math.sin(theta._radians);
+    final double cosTheta = Math.cos(theta._radians);
+    final double sinTheta = Math.sin(theta._radians);
   
     final double ms = axis.squaredLength();
     final double m = IMathUtils.instance().sqrt(ms);

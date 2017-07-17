@@ -20,6 +20,9 @@
 #include <G3MiOSSDK/G3MWidget.hpp>
 #include <G3MiOSSDK/TimeInterval.hpp>
 #include <G3MiOSSDK/MercatorTiledLayer.hpp>
+#include <G3MiOSSDK/Geodetic3D.hpp>
+#include <G3MiOSSDK/PlanetRenderer.hpp>
+
 
 void G3MRasterLayersDemoScene::createLayerSet(LayerSet* layerSet) {
   MapBoxLayer* mboxOSMLayer = new MapBoxLayer("examples.map-cnkhv76j",
@@ -185,7 +188,16 @@ void G3MRasterLayersDemoScene::createLayerSet(LayerSet* layerSet) {
 
 
 void G3MRasterLayersDemoScene::rawActivate(const G3MContext* context) {
+//#warning Diego at work!
+//  PlanetRenderer* planetRenderer = getModel()->getPlanetRenderer();
+//  planetRenderer->setShowStatistics(true);
+//  planetRenderer->setIncrementalTileQuality(true);
+
   createLayerSet( getModel()->getLayerSet() );
+
+//  getModel()->getG3MWidget()->setCameraPosition(Geodetic3D::fromDegrees(27.05392035893508762, -15.534032544664327702, 26904));
+//  getModel()->getG3MWidget()->setCameraHeadingPitchRoll(Angle::zero(), Angle::fromDegrees(-13), Angle::zero());
+//  getModel()->getG3MWidget()->setViewMode(STEREO);
 }
 
 void G3MRasterLayersDemoScene::rawSelectOption(const std::string& option,

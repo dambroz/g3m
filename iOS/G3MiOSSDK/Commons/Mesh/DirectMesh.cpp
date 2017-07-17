@@ -7,7 +7,11 @@
 //
 
 #include "DirectMesh.hpp"
+
 #include "GL.hpp"
+#include "G3MRenderContext.hpp"
+#include "ErrorHandling.hpp"
+
 
 DirectMesh::DirectMesh(const int primitive,
                        bool owner,
@@ -17,7 +21,6 @@ DirectMesh::DirectMesh(const int primitive,
                        float pointSize,
                        const Color* flatColor,
                        const IFloatBuffer* colors,
-                       const float colorsIntensity,
                        bool depthTest,
                        const IFloatBuffer* normals,
                        bool polygonOffsetFill,
@@ -31,7 +34,6 @@ AbstractMesh(primitive,
              pointSize,
              flatColor,
              colors,
-             colorsIntensity,
              depthTest,
              normals,
              polygonOffsetFill,
@@ -41,12 +43,19 @@ AbstractMesh(primitive,
   _renderVerticesCount = vertices->size() / 3;
 }
 
-void DirectMesh::rawRender(const G3MRenderContext* rc) const {
+void DirectMesh::renderMesh(const G3MRenderContext* rc,
+                            GLState* glState) const {
   GL* gl = rc->getGL();
-
   gl->drawArrays(_primitive,
                  0,
                  (int)_renderVerticesCount,
-                 _glState,
+                 glState,
                  *rc->getGPUProgramManager());
+}
+
+void DirectMesh::setRenderVerticesCount(size_t renderVerticesCount) {
+  if (renderVerticesCount > getRenderVerticesCount()) {
+    THROW_EXCEPTION("Invalid renderVerticesCount");
+  }
+  _renderVerticesCount = renderVerticesCount;
 }

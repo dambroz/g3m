@@ -12,11 +12,10 @@
 #include "Mesh.hpp"
 
 #include "Vector3D.hpp"
-#include "GLState.hpp"
 
 class MutableMatrix44D;
 class IFloatBuffer;
-class Color;
+
 
 class AbstractGeometryMesh : public Mesh {
   
@@ -24,9 +23,9 @@ protected:
   const int               _primitive;
   const Vector3D          _center;
   const MutableMatrix44D* _translationMatrix;
-  const IFloatBuffer*           _vertices;
+  const IFloatBuffer*     _vertices;
   const bool              _ownsVertices;
-  const IFloatBuffer*           _normals;
+  const IFloatBuffer*     _normals;
   const bool              _ownsNormals;
   const float             _lineWidth;
   const float             _pointSize;
@@ -58,10 +57,6 @@ protected:
   
   virtual void rawRender(const G3MRenderContext* rc) const = 0;
 
-  mutable bool _showNormals;
-  mutable Mesh* _normalsMesh;
-  Mesh* createNormalsMesh() const;
-  
 public:
   ~AbstractGeometryMesh();
   
@@ -69,7 +64,7 @@ public:
   
   size_t getVertexCount() const;
   
-  const Vector3D getVertex(size_t i) const;
+  const Vector3D getVertex(const size_t index) const;
   
   bool isTransparent(const G3MRenderContext* rc) const {
     return false; //TODO: CHECK
@@ -77,10 +72,6 @@ public:
   
   void rawRender(const G3MRenderContext* rc,
                  const GLState* parentGLState) const;
-
-  void showNormals(bool v) const {
-    _showNormals = v;
-  }
   
 };
 

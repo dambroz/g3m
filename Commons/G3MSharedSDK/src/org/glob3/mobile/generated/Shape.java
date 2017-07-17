@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Shape.cpp
 //  G3MiOSSDK
@@ -17,14 +17,11 @@ package org.glob3.mobile.generated;
 
 
 
-//class MutableMatrix44D;
-
-
-
 
 
 //class ShapePendingEffect;
-//class GPUProgramState;
+//class GLState;
+
 
 public abstract class Shape implements SurfaceElevationListener, EffectTarget
 {
@@ -43,7 +40,7 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
   private double _translationY;
   private double _translationZ;
 
-//  const Planet* _planet;
+  private MutableMatrix44D _localTransform = new MutableMatrix44D();
 
   private MutableMatrix44D _transformMatrix;
   private MutableMatrix44D getTransformMatrix(Planet planet)
@@ -66,6 +63,25 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
   private SurfaceElevationProvider _surfaceElevationProvider;
   private double _surfaceElevation;
 
+  private MutableMatrix44D getLocalTransform()
+  {
+    if (_localTransform.isValid())
+    {
+      return _localTransform;
+    }
+  
+    final MutableMatrix44D headingM = MutableMatrix44D.createRotationMatrix(_heading, Vector3D.DOWN_Z);
+    final MutableMatrix44D pitchM = MutableMatrix44D.createRotationMatrix(_pitch, Vector3D.UP_X);
+    final MutableMatrix44D rollM = MutableMatrix44D.createRotationMatrix(_roll, Vector3D.UP_Y);
+    final MutableMatrix44D rotationM = headingM.multiply(pitchM).multiply(rollM);
+  
+    final MutableMatrix44D scaleM = MutableMatrix44D.createScaleMatrix(_scaleX, _scaleY, _scaleZ);
+  
+    final MutableMatrix44D translationM = MutableMatrix44D.createTranslationMatrix(_translationX, _translationY, _translationZ);
+  
+    return rotationM.multiply(translationM).multiply(scaleM);
+  }
+
   protected void cleanTransformMatrix()
   {
     if (_transformMatrix != null)
@@ -73,30 +89,20 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
     _transformMatrix = null;
   }
 
-
-
-  public final MutableMatrix44D createTransformMatrix(Planet planet)
+  protected final MutableMatrix44D createTransformMatrix(Planet planet)
   {
+    final MutableMatrix44D localTransformM = getLocalTransform();
   
-    double altitude = _position._height;
+    double height = _position._height;
     if (_altitudeMode == AltitudeMode.RELATIVE_TO_GROUND)
     {
-      altitude += _surfaceElevation;
+      height += _surfaceElevation;
     }
+    final MutableMatrix44D geodeticTransformM = planet.createGeodeticTransformMatrix(_position._latitude, _position._longitude, height);
   
-    Geodetic3D positionWithSurfaceElevation = new Geodetic3D(_position._latitude, _position._longitude, altitude);
-  
-    final MutableMatrix44D geodeticTransform = (_position == null) ? MutableMatrix44D.identity() : planet.createGeodeticTransformMatrix(positionWithSurfaceElevation);
-  
-    final MutableMatrix44D headingRotation = MutableMatrix44D.createRotationMatrix(_heading, Vector3D.downZ());
-    final MutableMatrix44D pitchRotation = MutableMatrix44D.createRotationMatrix(_pitch, Vector3D.upX());
-    final MutableMatrix44D rollRotation = MutableMatrix44D.createRotationMatrix(_roll, Vector3D.upY());
-    final MutableMatrix44D scale = MutableMatrix44D.createScaleMatrix(_scaleX, _scaleY, _scaleZ);
-    final MutableMatrix44D translation = MutableMatrix44D.createTranslationMatrix(_translationX, _translationY, _translationZ);
-    final MutableMatrix44D localTransform = headingRotation.multiply(pitchRotation).multiply(rollRotation).multiply(translation).multiply(scale);
-  
-    return new MutableMatrix44D(geodeticTransform.multiply(localTransform));
+    return new MutableMatrix44D(geodeticTransformM.multiply(localTransformM));
   }
+
 
   public Shape(Geodetic3D position, AltitudeMode altitudeMode)
   {
@@ -116,7 +122,11 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
      _surfaceElevation = 0;
      _glState = new GLState();
      _surfaceElevationProvider = null;
-
+    _localTransform.setValid(false);
+    if (position.isNan())
+    {
+      throw new RuntimeException("position can't be NAN");
+    }
   }
 
   public void dispose()
@@ -173,28 +183,46 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
     return _roll;
   }
 
-//  void setPosition(Geodetic3D* position,
-//                   AltitudeMode altitudeMode);
-
-
-  //void Shape::setPosition(Geodetic3D* position,
-  //                        AltitudeMode altitudeMode) {
-  //  delete _position;
-  //  _position = position;
-  //  _altitudeMode = altitudeMode;
-  //  cleanTransformMatrix();
-  //}
-  
   public final void setPosition(Geodetic3D position)
   {
     if (_altitudeMode == AltitudeMode.RELATIVE_TO_GROUND)
     {
       throw new RuntimeException("Position change with (_altitudeMode == RELATIVE_TO_GROUND) not supported");
     }
-  
-    if (_position != null)
-       _position.dispose();
+    if (position.isNan())
+    {
+      throw new RuntimeException("position can't be NAN");
+    }
     _position = position;
+    cleanTransformMatrix();
+  }
+
+  public final void setFullPosition(Geodetic3D position, Angle heading, Angle pitch, Angle roll)
+  {
+    if (_altitudeMode == AltitudeMode.RELATIVE_TO_GROUND)
+    {
+      throw new RuntimeException("Position change with (_altitudeMode == RELATIVE_TO_GROUND) not supported");
+    }
+    if (position.isNan())
+    {
+      throw new RuntimeException("position can't be NAN");
+    }
+    if (heading.isNan())
+    {
+      throw new RuntimeException("heading can't be NAN");
+    }
+    if (pitch.isNan())
+    {
+      throw new RuntimeException("pitch can't be NAN");
+    }
+    if (roll.isNan())
+    {
+      throw new RuntimeException("roll can't be NAN");
+    }
+    _position = position;
+    _heading = heading;
+    _pitch = pitch;
+    _roll = roll;
     cleanTransformMatrix();
   }
 
@@ -242,18 +270,48 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
 
   public final void setHeading(Angle heading)
   {
+    if (heading.isNan())
+    {
+      throw new RuntimeException("heading can't be NAN");
+    }
     _heading = heading;
     cleanTransformMatrix();
   }
-
   public final void setPitch(Angle pitch)
   {
+    if (pitch.isNan())
+    {
+      throw new RuntimeException("pitch can't be NAN");
+    }
     _pitch = pitch;
     cleanTransformMatrix();
   }
-
   public final void setRoll(Angle roll)
   {
+    if (roll.isNan())
+    {
+      throw new RuntimeException("roll can't be NAN");
+    }
+    _roll = roll;
+    cleanTransformMatrix();
+  }
+
+  public final void setHeadingPitchRoll(Angle heading, Angle pitch, Angle roll)
+  {
+    if (heading.isNan())
+    {
+      throw new RuntimeException("heading can't be NAN");
+    }
+    if (pitch.isNan())
+    {
+      throw new RuntimeException("pitch can't be NAN");
+    }
+    if (roll.isNan())
+    {
+      throw new RuntimeException("roll can't be NAN");
+    }
+    _heading = heading;
+    _pitch = pitch;
     _roll = roll;
     cleanTransformMatrix();
   }
@@ -287,6 +345,12 @@ public abstract class Shape implements SurfaceElevationListener, EffectTarget
   public final void setScale(Vector3D scale)
   {
     setScale(scale._x, scale._y, scale._z);
+  }
+
+  public final void setLocalTransform(MutableMatrix44D localTransform)
+  {
+    _localTransform.copyValue(localTransform);
+    cleanTransformMatrix();
   }
 
   public final Vector3D getScale()

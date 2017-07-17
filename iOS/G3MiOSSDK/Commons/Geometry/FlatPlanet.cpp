@@ -10,6 +10,10 @@
 #include "Plane.hpp"
 #include "CameraEffects.hpp"
 #include "Camera.hpp"
+#include "Sector.hpp"
+#include "Geodetic3D.hpp"
+#include "IMathUtils.hpp"
+#include "TimeInterval.hpp"
 
 
 const Planet* FlatPlanet::createEarth() {
@@ -83,8 +87,10 @@ double FlatPlanet::computeFastLatLonDistance(const Geodetic2D& g1,
   return computePreciseLatLonDistance(g1, g2);
 }
 
-MutableMatrix44D FlatPlanet::createGeodeticTransformMatrix(const Geodetic3D& position) const {
-  return MutableMatrix44D::createTranslationMatrix( toCartesian(position) );
+MutableMatrix44D FlatPlanet::createGeodeticTransformMatrix(const Angle& latitude,
+                                                           const Angle& longitude,
+                                                           const double height) const {
+  return MutableMatrix44D::createTranslationMatrix( toCartesian(latitude, longitude, height) );
 }
 
 void FlatPlanet::beginSingleDrag(const Vector3D& origin, const Vector3D& initialRay) const {
@@ -227,7 +233,76 @@ MutableMatrix44D FlatPlanet::drag(const Geodetic3D& origin, const Geodetic3D& de
   return MutableMatrix44D::createTranslationMatrix(P1.sub(P0));
 }
 
-void FlatPlanet::applyCameraConstrainers(const Camera* previousCamera,
-                                         Camera* nextCamera) const {
+void FlatPlanet::applyCameraConstrains(const Camera* previousCamera,
+                                       Camera* nextCamera) const {
 
+}
+
+Geodetic3D FlatPlanet::getDefaultCameraPosition(const Sector& rendereSector) const {
+  const Vector3D asw = toCartesian(rendereSector.getSW());
+  const Vector3D ane = toCartesian(rendereSector.getNE());
+  const double height = asw.sub(ane).length() * 1.9;
+
+  return Geodetic3D(rendereSector._center,
+                    height);
+}
+
+Vector3D FlatPlanet::toCartesian(const Angle& latitude,
+                                 const Angle& longitude,
+                                 const double height) const {
+  const double x = longitude._degrees * _size._x / 360.0;
+  const double y = latitude._degrees  * _size._y / 180.0;
+  return Vector3D(x, y, height);
+}
+
+Vector3D FlatPlanet::toCartesian(const Geodetic3D& geodetic) const {
+  return toCartesian(geodetic._latitude,
+                     geodetic._longitude,
+                     geodetic._height);
+}
+
+Vector3D FlatPlanet::toCartesian(const Geodetic2D& geodetic) const {
+  return toCartesian(geodetic._latitude,
+                     geodetic._longitude,
+                     0.0);
+}
+
+Vector3D FlatPlanet::toCartesian(const Geodetic2D& geodetic,
+                                 const double height) const {
+  return toCartesian(geodetic._latitude,
+                     geodetic._longitude,
+                     height);
+}
+
+void FlatPlanet::toCartesian(const Angle& latitude,
+                             const Angle& longitude,
+                             const double height,
+                             MutableVector3D& result) const {
+  const double x = longitude._degrees * _size._x / 360.0;
+  const double y = latitude._degrees  * _size._y / 180.0;
+  result.set(x, y, height);
+}
+
+void FlatPlanet::toCartesian(const Geodetic3D& geodetic,
+                             MutableVector3D& result) const {
+  toCartesian(geodetic._latitude,
+              geodetic._longitude,
+              geodetic._height,
+              result);
+}
+void FlatPlanet::toCartesian(const Geodetic2D& geodetic,
+                             MutableVector3D& result) const {
+  toCartesian(geodetic._latitude,
+              geodetic._longitude,
+              0.0,
+              result);
+}
+
+void FlatPlanet::toCartesian(const Geodetic2D& geodetic,
+                             const double height,
+                             MutableVector3D& result) const {
+  toCartesian(geodetic._latitude,
+              geodetic._longitude,
+              height,
+              result);
 }

@@ -1,4 +1,22 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
+//
+//  Geodetic3D.cpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 31/05/12.
+//
+
+//
+//  Geodetic3D.hpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 31/05/12.
+//
+
+
+//class Geodetic2D;
+
+
 /**
  * Class to represent a position in the globe by latitude, longitud and altitude.
  */
@@ -17,7 +35,7 @@ public class Geodetic3D
 
   public final boolean isNan()
   {
-    return _latitude.isNan() || _longitude.isNan();
+    return _latitude.isNan() || _longitude.isNan() || (_height != _height);
   }
 
   public static Geodetic3D zero()

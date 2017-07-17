@@ -11,17 +11,17 @@
 #include "IFloatBuffer.hpp"
 #include "IStringBuilder.hpp"
 #include "Vector3D.hpp"
+#include "IMathUtils.hpp"
+
 
 const float FloatBufferElevationData::NO_DATA_VALUE = NANF;
 
 
 FloatBufferElevationData::FloatBufferElevationData(const Sector& sector,
                                                    const Vector2I& extent,
-                                                   const Sector& realSector,
-                                                   const Vector2I& realExtent,
                                                    IFloatBuffer* buffer,
                                                    double deltaHeight) :
-BufferElevationData(sector, extent, realSector, realExtent, buffer->size(), deltaHeight),
+BufferElevationData(sector, extent, buffer->size(), deltaHeight),
 _buffer(buffer)
 {
   if (_buffer->size() != (_width * _height) ) {
@@ -44,7 +44,6 @@ FloatBufferElevationData::~FloatBufferElevationData() {
 #ifdef JAVA_CODE
   super.dispose();
 #endif
-
 }
 
 double FloatBufferElevationData::getValueInBufferAt(int index) const {

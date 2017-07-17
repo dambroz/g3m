@@ -10,31 +10,40 @@
 
 
 #include "CameraEventHandler.hpp"
-#include "Camera.hpp"
+
+#include "MutableVector3D.hpp"
+#include "MutableVector2I.hpp"
+#include "MutableMatrix44D.hpp"
 
 
 class CameraDoubleDragHandler: public CameraEventHandler {
-    
+private:
+  MutableVector3D  _cameraPosition;
+  MutableVector3D  _cameraCenter;
+  MutableVector3D  _cameraUp;
+  MutableVector2I  _cameraViewPort;
+  MutableMatrix44D _cameraModelViewMatrix;
+
+
 public:
-  CameraDoubleDragHandler()
-  {
+  CameraDoubleDragHandler() {
   }
-  
+
   ~CameraDoubleDragHandler() {
 #ifdef JAVA_CODE
-  super.dispose();
+    super.dispose();
 #endif
-
   }
-  
-  
+
+  RenderState getRenderState(const G3MRenderContext* rc);
+
   bool onTouchEvent(const G3MEventContext *eventContext,
                     const TouchEvent* touchEvent,
                     CameraContext *cameraContext);
-  
+
   void render(const G3MRenderContext* rc,
               CameraContext *cameraContext);
-  
+
   void onDown(const G3MEventContext *eventContext,
               const TouchEvent& touchEvent,
               CameraContext *cameraContext);
@@ -44,12 +53,6 @@ public:
   void onUp(const G3MEventContext *eventContext,
             const TouchEvent& touchEvent,
             CameraContext *cameraContext);
-  
-  MutableVector3D _cameraPosition;
-  MutableVector3D _cameraCenter;
-  MutableVector3D _cameraUp;
-  MutableVector2I _cameraViewPort;
-  MutableMatrix44D _cameraModelViewMatrix;
   
 };
 

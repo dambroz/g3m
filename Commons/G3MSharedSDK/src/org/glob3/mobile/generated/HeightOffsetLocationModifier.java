@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  DeviceAttitudeCameraHandler.cpp
 //  G3MiOSSDK
@@ -18,6 +18,7 @@ package org.glob3.mobile.generated;
 
 
 //class MeshRenderer;
+//class Camera;
 
 
 public class HeightOffsetLocationModifier implements ILocationModifier

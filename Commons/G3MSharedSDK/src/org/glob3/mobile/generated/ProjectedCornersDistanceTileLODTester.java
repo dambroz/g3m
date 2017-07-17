@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  ProjectedCornersDistanceTileLODTester.cpp
 //  G3MiOSSDK
@@ -35,7 +35,7 @@ public class ProjectedCornersDistanceTileLODTester extends TileLODTester
        */
     
       final double angleInRadians = Vector3D.angleInRadiansBetween(a, b);
-      final double halfAngleSin = java.lang.Math.sin(angleInRadians / 2);
+      final double halfAngleSin = Math.sin(angleInRadians / 2);
       final double arcSegmentRatio = (halfAngleSin == 0) ? 1 : angleInRadians / (2 * halfAngleSin);
       return (arcSegmentRatio * arcSegmentRatio);
     }
@@ -50,8 +50,16 @@ public class ProjectedCornersDistanceTileLODTester extends TileLODTester
     private final Vector3D _southWestPoint ;
     private final Vector3D _southEastPoint ;
 
+//    const int    _tileLevel;
+//    const int    _tileRow;
+//    const int    _tileColumn;
+//    const double _mediumHeight;
 
     public PvtData(Tile tile, double mediumHeight, Planet planet)
+    //_tileLevel(tile->_level),
+    //_tileRow(tile->_row),
+    //_tileColumn(tile->_column),
+    //_mediumHeight(mediumHeight)
     {
        super(DefineConstants.ProjectedCornersDistanceTLTDataID);
        _northWestPoint = new Vector3D(planet.toCartesian(tile._sector.getNW(), mediumHeight));
@@ -67,10 +75,22 @@ public class ProjectedCornersDistanceTileLODTester extends TileLODTester
       _southArcSegmentRatioSquared = getSquaredArcSegmentRatio(normalSW, normalSE);
       _eastArcSegmentRatioSquared = getSquaredArcSegmentRatio(normalNE, normalSE);
       _westArcSegmentRatioSquared = getSquaredArcSegmentRatio(normalNW, normalSW);
+    
+    //  if (_tileLevel == 4 &&
+    //      _tileRow == 9 &&
+    //      (_tileColumn == 4 || _tileColumn == 5)) {
+    //    printf("break on me\n");
+    //  }
     }
 
     public final boolean evaluate(Camera camera, double texHeightSquared, double texWidthSquared)
     {
+    
+    //  if (_tileLevel == 4 &&
+    //      _tileRow == 9 &&
+    //      (_tileColumn == 4 || _tileColumn == 5)) {
+    //    printf("break on me\n");
+    //  }
     
       final double distanceInPixelsNorth = camera.getEstimatedPixelDistance(_northWestPoint, _northEastPoint);
       final double distanceInPixelsSquaredArcNorth = (distanceInPixelsNorth * distanceInPixelsNorth) * _northArcSegmentRatioSquared;
@@ -110,7 +130,7 @@ public class ProjectedCornersDistanceTileLODTester extends TileLODTester
     PvtData data = (PvtData) tile.getData(DefineConstants.ProjectedCornersDistanceTLTDataID);
     if (data == null)
     {
-      final double mediumHeight = tile.getTessellatorMeshData()._averageHeight;
+      final double mediumHeight = tile.getTileTessellatorMeshData()._averageHeight;
       data = new PvtData(tile, mediumHeight, rc.getPlanet());
       tile.setData(data);
     }

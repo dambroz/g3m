@@ -11,6 +11,7 @@
 
 #include "ElevationData.hpp"
 
+
 class BufferElevationData : public ElevationData {
 protected:
   const size_t _bufferSize;
@@ -21,8 +22,6 @@ protected:
 public:
   BufferElevationData(const Sector& sector,
                       const Vector2I& extent,
-                      const Sector& realSector,
-                      const Vector2I& realExtent,
                       size_t bufferSize,
                       double deltaHeight);
 

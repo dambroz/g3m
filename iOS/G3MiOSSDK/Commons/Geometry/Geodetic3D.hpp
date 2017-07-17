@@ -9,13 +9,7 @@
 #define G3MiOSSDK_Geodetic3D
 
 #include "Angle.hpp"
-#include "Geodetic2D.hpp"
-
-//Altitude modes taken from KML standard (with the exception of relative to sea floor)
-enum AltitudeMode{
-  RELATIVE_TO_GROUND,   //Relative to elevation provided by any SurfaceElevationProvider (tipycally PlanetRenderer)
-  ABSOLUTE              //Relative to surface of geometrical planet definition (Ellipsoid, sphere, flat...)
-};
+class Geodetic2D;
 
 
 /**
@@ -33,9 +27,7 @@ public:
     return Geodetic3D(Angle::nan(), Angle::nan(), 0);
   }
 
-  bool isNan() const {
-    return _latitude.isNan() || _longitude.isNan();
-  }
+  bool isNan() const;
 
   static Geodetic3D zero() {
     return Geodetic3D(Angle::zero(), Angle::zero(), 0);
@@ -47,12 +39,7 @@ public:
 
   static Geodetic3D linearInterpolation(const Geodetic3D& from,
                                         const Geodetic3D& to,
-                                        double alpha) {
-    return Geodetic3D(Angle::linearInterpolation(from._latitude,  to._latitude,  alpha),
-                      Angle::linearInterpolation(from._longitude, to._longitude, alpha),
-                      IMathUtils::instance()->linearInterpolation(from._height, to._height, alpha)
-                      );
-  }
+                                        double alpha);
 
   static Geodetic3D linearInterpolationFromDegrees(const double fromLatitudeDegrees,
                                                    const double fromLongitudeDegrees,
@@ -60,21 +47,11 @@ public:
                                                    const double toLatitudeDegrees,
                                                    const double toLongitudeDegrees,
                                                    const double toHeight,
-                                                   double alpha) {
-    return Geodetic3D(Angle::linearInterpolationFromDegrees(fromLatitudeDegrees,  toLatitudeDegrees,  alpha),
-                      Angle::linearInterpolationFromDegrees(fromLongitudeDegrees, toLongitudeDegrees, alpha),
-                      IMathUtils::instance()->linearInterpolation(fromHeight, toHeight, alpha)
-                      );
-  }
+                                                   double alpha);
 
   static Geodetic3D cosineInterpolation(const Geodetic3D& from,
                                         const Geodetic3D& to,
-                                        double alpha) {
-    return Geodetic3D(Angle::cosineInterpolation(from._latitude,  to._latitude,  alpha),
-                      Angle::cosineInterpolation(from._longitude, to._longitude, alpha),
-                      IMathUtils::instance()->cosineInterpolation(from._height, to._height, alpha)
-                      );
-  }
+                                        double alpha);
 
   Geodetic3D(const Angle& latitude,
              const Angle& longitude,
@@ -86,12 +63,7 @@ public:
   }
 
   Geodetic3D(const Geodetic2D& g2,
-             const double height):
-  _latitude(g2._latitude),
-  _longitude(g2._longitude),
-  _height(height)
-  {
-  }
+             const double height);
 
   Geodetic3D(const Geodetic3D& g) :
   _latitude(g._latitude),
@@ -103,9 +75,7 @@ public:
   ~Geodetic3D() {
   }
 
-  Geodetic2D asGeodetic2D() const {
-    return Geodetic2D(_latitude, _longitude);
-  }
+  Geodetic2D asGeodetic2D() const;
 
   const std::string description() const;
 #ifdef JAVA_CODE
@@ -143,7 +113,6 @@ public:
   bool isEquals(const Geodetic3D& that) const;
   
 };
-
 
 
 #endif

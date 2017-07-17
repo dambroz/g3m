@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class GPUVariable
 {
 
@@ -108,6 +108,11 @@ public class GPUVariable
     if (name.compareTo("uBillboardAnchor") == 0)
     {
       return GPUUniformKey.BILLBOARD_ANCHOR;
+    }
+  
+    if (name.compareTo("uCameraPosition") == 0)
+    {
+      return GPUUniformKey.CAMERA_POSITION;
     }
   
     return GPUUniformKey.UNRECOGNIZED_UNIFORM;

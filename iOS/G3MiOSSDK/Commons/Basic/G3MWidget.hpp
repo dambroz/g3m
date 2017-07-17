@@ -14,7 +14,10 @@
 #include "Angle.hpp"
 #include "InfoDisplay.hpp"
 #include "ViewMode.hpp"
+#include "FrustumPolicyHandler.hpp"
 
+class IMathUtils;
+class ILogger;
 class G3MWidget;
 class IFactory;
 class IStringUtils;
@@ -55,6 +58,8 @@ class G3MRenderContext;
 class SurfaceElevationProvider;
 class GLState;
 class G3MEventContext;
+class FrustumPolicy;
+class NearFrustumRenderer;
 
 
 class WidgetUserData {
@@ -81,8 +86,7 @@ public:
   }
 };
 
-
-class G3MWidget : public ChangedRendererInfoListener {
+class G3MWidget : public ChangedRendererInfoListener, FrustumPolicyHandler {
 public:
 
   static void initSingletons(ILogger*            logger,
@@ -107,6 +111,7 @@ public:
                            ProtoRenderer*                       busyRenderer,
                            ErrorRenderer*                       errorRenderer,
                            Renderer*                            hudRenderer,
+                           NearFrustumRenderer*                 nearFrustumRenderer,
                            const Color&                         backgroundColor,
                            const bool                           logFPS,
                            const bool                           logDownloaderStatistics,
@@ -116,8 +121,9 @@ public:
                            GPUProgramManager*                   gpuProgramManager,
                            SceneLighting*                       sceneLighting,
                            const InitialCameraPositionProvider* initialCameraPositionProvider,
-                           InfoDisplay* infoDisplay,
-                           ViewMode viewMode);
+                           InfoDisplay*                         infoDisplay,
+                           ViewMode                             viewMode,
+                           const FrustumPolicy*                 frustumPolicy);
 
   ~G3MWidget();
 
@@ -219,6 +225,7 @@ public:
   }
 
   void setBackgroundColor(const Color& backgroundColor);
+  Color getBackgroundColor() const;
 
   PlanetRenderer* getPlanetRenderer();
 
@@ -238,12 +245,18 @@ public:
     return _infoDisplay;
   }
 
-  void changedRendererInfo(const size_t rendererIdentifier,
+  void changedRendererInfo(const size_t rendererID,
                            const std::vector<const Info*>& info);
 
   void removeAllPeriodicalTasks();
 
   void setViewMode(ViewMode viewMode);
+
+  void changeToFixedFrustum(double zNear,
+                            double zFar);
+
+  void resetFrustumPolicy();
+
 
 private:
   IStorage*                _storage;
@@ -255,20 +268,23 @@ private:
   GL*                 _gl;
   const Planet*       _planet;
 
-  CameraRenderer*     _cameraRenderer;
-  Renderer*           _mainRenderer;
-  ProtoRenderer*      _busyRenderer;
-  ErrorRenderer*      _errorRenderer;
-  Renderer*           _hudRenderer;
-  RenderState*        _rendererState;
-  ProtoRenderer*      _selectedRenderer;
+  CameraRenderer*      _cameraRenderer;
+  Renderer*            _mainRenderer;
+  ProtoRenderer*       _busyRenderer;
+  ErrorRenderer*       _errorRenderer;
+  Renderer*            _hudRenderer;
+  NearFrustumRenderer* _nearFrustumRenderer;
+  RenderState*         _rendererState;
+  ProtoRenderer*       _selectedRenderer;
 
   EffectsScheduler*   _effectsScheduler;
 
   std::vector<ICameraConstrainer*> _cameraConstrainers;
 
-  Camera*          _currentCamera;
-  Camera*          _nextCamera;
+  const FrustumPolicy* _frustumPolicy;
+  Camera*              _currentCamera;
+  Camera*              _nextCamera;
+
   TexturesHandler* _texturesHandler;
 
   Color*           _backgroundColor;
@@ -341,6 +357,7 @@ private:
             ProtoRenderer*                       busyRenderer,
             ErrorRenderer*                       errorRenderer,
             Renderer*                            hudRenderer,
+            NearFrustumRenderer*                 nearFrustumRenderer,
             const Color&                         backgroundColor,
             const bool                           logFPS,
             const bool                           logDownloaderStatistics,
@@ -351,7 +368,8 @@ private:
             SceneLighting*                       sceneLighting,
             const InitialCameraPositionProvider* initialCameraPositionProvider,
             InfoDisplay*                         infoDisplay,
-            ViewMode                             viewMode);
+            ViewMode                             viewMode,
+            const FrustumPolicy*                 frustumPolicy);
 
   void notifyTouchEvent(const G3MEventContext &ec,
                         const TouchEvent* touchEvent) const;
@@ -361,7 +379,7 @@ private:
   void setSelectedRenderer(ProtoRenderer* selectedRenderer);
 
   void rawRender(const RenderState_Type renderStateType);
-
+  
   void rawRenderMono(const RenderState_Type renderStateType);
   
   void rawRenderStereoParallelAxis(const RenderState_Type renderStateType);

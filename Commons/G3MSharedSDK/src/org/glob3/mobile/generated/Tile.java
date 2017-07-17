@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Tile.cpp
 //  G3MiOSSDK
@@ -15,8 +15,11 @@ package org.glob3.mobile.generated;
 
 
 
+
 //class TileTexturizer;
+//class Mesh;
 //class TileElevationDataRequest;
+//class DEMSubscription;
 //class GLState;
 //class ITexturizerData;
 //class PlanetTileTessellatorData;
@@ -24,6 +27,8 @@ package org.glob3.mobile.generated;
 //class PlanetRenderer;
 //class TileData;
 //class TilesStatistics;
+//class Geodetic3D;
+//class Vector2I;
 
 
 public class Tile
@@ -36,8 +41,7 @@ public class Tile
   private Mesh _debugMesh;
   private Mesh _texturizedMesh;
   private TileElevationDataRequest _elevationDataRequest;
-
-  private Mesh _flatColorMesh;
+  private DEMSubscription _demSubscription;
 
   private boolean _textureSolved;
   private java.util.ArrayList<Tile> _subtiles;
@@ -65,6 +69,10 @@ public class Tile
       return;
     }
   
+  //  tessellatorMesh->getBoundingVolume()->render(rc,
+  //                                               glState,
+  //                                               Color::white());
+  
     if (prc._texturizer == null)
     {
       tessellatorMesh.render(rc, glState);
@@ -78,18 +86,13 @@ public class Tile
         _texturizedMesh = prc._texturizer.texturize(rc, prc, this, tessellatorMesh, _texturizedMesh);
       }
   
-      if (_texturizedMesh != null)
+      if (_texturizedMesh == null)
       {
-        _texturizedMesh.render(rc, glState);
+        tessellatorMesh.render(rc, glState);
       }
       else
       {
-        //Adding flat color if no texture set on the mesh
-        if (_flatColorMesh == null)
-        {
-          _flatColorMesh = new FlatColorMesh(tessellatorMesh, false, Color.newFromRGBA(1.0f, 1.0f, 1.0f, 1.0f), true);
-        }
-        _flatColorMesh.render(rc, glState);
+        _texturizedMesh.render(rc, glState);
       }
     }
   }
@@ -103,10 +106,10 @@ public class Tile
     }
   }
 
-  private Tile createSubTile(Angle lowerLat, Angle lowerLon, Angle upperLat, Angle upperLon, int level, int row, int column, boolean setParent)
+  private Tile createSubTile(Sector sector, int level, int row, int column, boolean setParent)
   {
     Tile parent = setParent ? this : null;
-    return new Tile(_texturizer, parent, new Sector(new Geodetic2D(lowerLat, lowerLon), new Geodetic2D(upperLat, upperLon)), _mercator, level, row, column, _planetRenderer);
+    return new Tile(_texturizer, parent, sector, _mercator, level, row, column, _planetRenderer);
   }
 
 //C++ TO JAVA CONVERTER TODO TASK: The implementation of the following method could not be found:
@@ -175,24 +178,52 @@ public class Tile
   }
 
   private ITexturizerData _texturizerData;
-  private PlanetTileTessellatorData _tessellatorData;
+  private PlanetTileTessellatorData _planetTileTessellatorData;
 
   private int _elevationDataLevel;
   private ElevationData _elevationData;
   private boolean _mustActualizeMeshDueToNewElevationData;
+  private DEMGrid _grid;
   private ElevationDataProvider _lastElevationDataProvider;
   private int _lastTileMeshResolutionX;
   private int _lastTileMeshResolutionY;
 
   private final PlanetRenderer _planetRenderer;
 
-  private static String createTileId(int level, int row, int column)
+
+  ///#include "BoundingVolume.hpp"
+  ///#include "Color.hpp"
+  
+  
+  private static String createTileID(int level, int row, int column)
   {
     return level + "/" + row + "/" + column;
   }
 
   private TileData[] _data;
   private int _dataSize;
+
+
+
+  private static class TerrainListener implements DEMListener
+  {
+    private Tile _tile;
+    public TerrainListener(Tile tile)
+    {
+       _tile = tile;
+    }
+
+    public void dispose()
+    {
+    }
+
+    public final void onGrid(DEMGrid grid)
+    {
+      _tile.onGrid(grid);
+    }
+
+  }
+
 
   public final Sector _sector ;
   public final boolean _mercator;
@@ -212,7 +243,6 @@ public class Tile
      _column = column;
      _tessellatorMesh = null;
      _debugMesh = null;
-     _flatColorMesh = null;
      _texturizedMesh = null;
      _textureSolved = false;
      _texturizerDirty = true;
@@ -223,12 +253,14 @@ public class Tile
      _elevationData = null;
      _elevationDataLevel = -1;
      _elevationDataRequest = null;
+     _grid = null;
+     _demSubscription = null;
      _mustActualizeMeshDueToNewElevationData = false;
      _lastTileMeshResolutionX = -1;
      _lastTileMeshResolutionY = -1;
      _planetRenderer = planetRenderer;
-     _tessellatorData = null;
-     _id = createTileId(level, row, column);
+     _planetTileTessellatorData = null;
+     _id = createTileID(level, row, column);
      _data = null;
      _dataSize = 0;
   }
@@ -239,38 +271,40 @@ public class Tile
   
     if (_debugMesh != null)
        _debugMesh.dispose();
-    _debugMesh = null;
-  
-    if (_flatColorMesh != null)
-       _flatColorMesh.dispose();
-    _flatColorMesh = null;
   
     if (_tessellatorMesh != null)
        _tessellatorMesh.dispose();
-    _tessellatorMesh = null;
   
     if (_texturizerData != null)
        _texturizerData.dispose();
-    _texturizerData = null;
   
     if (_texturizedMesh != null)
        _texturizedMesh.dispose();
-    _texturizedMesh = null;
   
     if (_elevationData != null)
        _elevationData.dispose();
-    _elevationData = null;
+  
+    if (_grid != null)
+    {
+      _grid._release();
+    }
   
     if (_elevationDataRequest != null)
     {
       _elevationDataRequest.cancelRequest(); //The listener will auto delete
       if (_elevationDataRequest != null)
          _elevationDataRequest.dispose();
-      _elevationDataRequest = null;
     }
   
-    if (_tessellatorData != null)
-       _tessellatorData.dispose();
+    if (_demSubscription != null)
+    {
+      _demSubscription.cancel();
+      _demSubscription._release();
+      _demSubscription = null;
+    }
+  
+    if (_planetTileTessellatorData != null)
+       _planetTileTessellatorData.dispose();
   
     for (int i = 0; i < _dataSize; i++)
     {
@@ -437,18 +471,18 @@ public class Tile
     }
   }
 
-  public final PlanetTileTessellatorData getTessellatorData()
+  public final PlanetTileTessellatorData getPlanetTileTessellatorData()
   {
-    return _tessellatorData;
+    return _planetTileTessellatorData;
   }
 
-  public final void setTessellatorData(PlanetTileTessellatorData tessellatorData)
+  public final void setPlanetTileTessellatorData(PlanetTileTessellatorData planetTileTessellatorData)
   {
-    if (tessellatorData != _tessellatorData)
+    if (planetTileTessellatorData != _planetTileTessellatorData)
     {
-      if (_tessellatorData != null)
-         _tessellatorData.dispose();
-      _tessellatorData = tessellatorData;
+      if (_planetTileTessellatorData != null)
+         _planetTileTessellatorData.dispose();
+      _planetTileTessellatorData = planetTileTessellatorData;
     }
   }
 
@@ -522,6 +556,13 @@ public class Tile
         _elevationDataRequest.cancelRequest();
       }
     }
+  
+    if (_demSubscription != null)
+    {
+      _demSubscription.cancel();
+      _demSubscription._release();
+      _demSubscription = null;
+    }
   }
 
   public final String description()
@@ -568,28 +609,28 @@ public class Tile
   
     final Sector renderedSector = _planetRenderer.getRenderedSector();
   
-    Sector s1 = new Sector(new Geodetic2D(lower._latitude, lower._longitude), new Geodetic2D(splitLatitude, splitLongitude));
+    final Sector s0 = new Sector(new Geodetic2D(lower._latitude, lower._longitude), new Geodetic2D(splitLatitude, splitLongitude));
+    if (renderedSector == null || renderedSector.touchesWith(s0))
+    {
+      subTiles.add(createSubTile(s0, nextLevel, row2, column2, setParent));
+    }
+  
+    final Sector s1 = new Sector(new Geodetic2D(lower._latitude, splitLongitude), new Geodetic2D(splitLatitude, upper._longitude));
     if (renderedSector == null || renderedSector.touchesWith(s1))
     {
-      subTiles.add(createSubTile(lower._latitude, lower._longitude, splitLatitude, splitLongitude, nextLevel, row2, column2, setParent));
+      subTiles.add(createSubTile(s1, nextLevel, row2, column2 + 1, setParent));
     }
   
-    Sector s2 = new Sector(new Geodetic2D(lower._latitude, splitLongitude), new Geodetic2D(splitLatitude, upper._longitude));
+    final Sector s2 = new Sector(new Geodetic2D(splitLatitude, lower._longitude), new Geodetic2D(upper._latitude, splitLongitude));
     if (renderedSector == null || renderedSector.touchesWith(s2))
     {
-      subTiles.add(createSubTile(lower._latitude, splitLongitude, splitLatitude, upper._longitude, nextLevel, row2, column2 + 1, setParent));
+      subTiles.add(createSubTile(s2, nextLevel, row2 + 1, column2, setParent));
     }
   
-    Sector s3 = new Sector(new Geodetic2D(splitLatitude, lower._longitude), new Geodetic2D(upper._latitude, splitLongitude));
+    final Sector s3 = new Sector(new Geodetic2D(splitLatitude, splitLongitude), new Geodetic2D(upper._latitude, upper._longitude));
     if (renderedSector == null || renderedSector.touchesWith(s3))
     {
-      subTiles.add(createSubTile(splitLatitude, lower._longitude, upper._latitude, splitLongitude, nextLevel, row2 + 1, column2, setParent));
-    }
-  
-    Sector s4 = new Sector(new Geodetic2D(splitLatitude, splitLongitude), new Geodetic2D(upper._latitude, upper._longitude));
-    if (renderedSector == null || renderedSector.touchesWith(s4))
-    {
-      subTiles.add(createSubTile(splitLatitude, splitLongitude, upper._latitude, upper._longitude, nextLevel, row2 + 1, column2 + 1, setParent));
+      subTiles.add(createSubTile(s3, nextLevel, row2 + 1, column2 + 1, setParent));
     }
   
     subTiles.trimToSize();
@@ -605,6 +646,19 @@ public class Tile
   public final ElevationData getElevationData()
   {
     return _elevationData;
+  }
+
+  public final void onGrid(DEMGrid grid)
+  {
+    if (grid != _grid)
+    {
+      if (_grid != null)
+      {
+        _grid._release();
+      }
+      _grid = grid;
+      _mustActualizeMeshDueToNewElevationData = true;
+    }
   }
 
   public final void setElevationData(ElevationData ed, int level)
@@ -786,7 +840,7 @@ public class Tile
     }
   }
 
-  public final TileTessellatorMeshData getTessellatorMeshData()
+  public final TileTessellatorMeshData getTileTessellatorMeshData()
   {
 //C++ TO JAVA CONVERTER TODO TASK: There is no preprocessor in Java:
 //#warning ask JM
@@ -803,6 +857,17 @@ public class Tile
       initializeElevationData(rc, prc);
     }
   
+    DEMProvider demProvider = prc._demProvider;
+    if (demProvider != null)
+    {
+      if (_demSubscription == null)
+      {
+        final Vector2S tileMeshResolution = prc._layerTilesRenderParameters._tileMeshResolution;
+  
+        _demSubscription = demProvider.subscribe(_sector, tileMeshResolution, new TerrainListener(this), true);
+      }
+    }
+  
     if ((_tessellatorMesh == null) || _mustActualizeMeshDueToNewElevationData)
     {
       _mustActualizeMeshDueToNewElevationData = false;
@@ -816,28 +881,28 @@ public class Tile
         _debugMesh = null;
       }
   
-      if (elevationDataProvider == null)
+  //    if (elevationDataProvider == NULL) {
+  //      // no elevation data provider, just create a simple mesh without elevation
+  //      _tessellatorMesh = prc->_tessellator->createTileMesh(rc,
+  //                                                           prc,
+  //                                                           this,
+  //                                                           NULL,
+  //                                                           _tileTessellatorMeshData);
+  //    }
+  //    else {
+      Mesh tessellatorMesh = prc._tessellator.createTileMesh(rc, prc, this, _elevationData, _grid, _tileTessellatorMeshData);
+  
+      MeshHolder meshHolder = (MeshHolder) _tessellatorMesh;
+      if (meshHolder == null)
       {
-        // no elevation data provider, just create a simple mesh without elevation
-        _tessellatorMesh = prc._tessellator.createTileMesh(rc, prc, this, null, _tileTessellatorMeshData);
+        meshHolder = new MeshHolder(tessellatorMesh);
+        _tessellatorMesh = meshHolder;
       }
       else
       {
-        Mesh tessellatorMesh = prc._tessellator.createTileMesh(rc, prc, this, _elevationData, _tileTessellatorMeshData);
-  
-        MeshHolder meshHolder = (MeshHolder) _tessellatorMesh;
-        if (meshHolder == null)
-        {
-          meshHolder = new MeshHolder(tessellatorMesh);
-          _tessellatorMesh = meshHolder;
-        }
-        else
-        {
-          meshHolder.setMesh(tessellatorMesh);
-        }
-  
-        //      computeTileCorners(rc->getPlanet());
+        meshHolder.setMesh(tessellatorMesh);
       }
+  //    }
   
       //Notifying when the tile is first created and every time the elevation data changes
       _planetRenderer.sectorElevationChanged(_elevationData);

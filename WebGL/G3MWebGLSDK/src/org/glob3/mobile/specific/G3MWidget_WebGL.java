@@ -6,40 +6,25 @@ import org.glob3.mobile.generated.Angle;
 import org.glob3.mobile.generated.BasicShadersGL2;
 import org.glob3.mobile.generated.Camera;
 import org.glob3.mobile.generated.CameraRenderer;
-import org.glob3.mobile.generated.Color;
-import org.glob3.mobile.generated.ErrorRenderer;
 import org.glob3.mobile.generated.G3MContext;
 import org.glob3.mobile.generated.G3MWidget;
-import org.glob3.mobile.generated.GInitializationTask;
 import org.glob3.mobile.generated.GL;
 import org.glob3.mobile.generated.GPUProgramFactory;
 import org.glob3.mobile.generated.GPUProgramManager;
 import org.glob3.mobile.generated.Geodetic3D;
-import org.glob3.mobile.generated.ICameraActivityListener;
-import org.glob3.mobile.generated.ICameraConstrainer;
 import org.glob3.mobile.generated.IDeviceAttitude;
 import org.glob3.mobile.generated.IDeviceLocation;
-import org.glob3.mobile.generated.IDownloader;
 import org.glob3.mobile.generated.IFactory;
 import org.glob3.mobile.generated.IJSONParser;
 import org.glob3.mobile.generated.ILogger;
 import org.glob3.mobile.generated.IMathUtils;
 import org.glob3.mobile.generated.INativeGL;
-import org.glob3.mobile.generated.IStorage;
 import org.glob3.mobile.generated.IStringBuilder;
 import org.glob3.mobile.generated.IStringUtils;
 import org.glob3.mobile.generated.ITextUtils;
-import org.glob3.mobile.generated.IThreadUtils;
-import org.glob3.mobile.generated.InfoDisplay;
-import org.glob3.mobile.generated.InitialCameraPositionProvider;
 import org.glob3.mobile.generated.LogLevel;
-import org.glob3.mobile.generated.PeriodicalTask;
-import org.glob3.mobile.generated.Planet;
-import org.glob3.mobile.generated.ProtoRenderer;
-import org.glob3.mobile.generated.Renderer;
-import org.glob3.mobile.generated.SceneLighting;
 import org.glob3.mobile.generated.TimeInterval;
-import org.glob3.mobile.generated.ViewMode;
+import org.glob3.mobile.generated.TouchEvent;
 import org.glob3.mobile.generated.WidgetUserData;
 
 import com.google.gwt.canvas.client.Canvas;
@@ -54,18 +39,49 @@ public class G3MWidget_WebGL
    extends
       Composite {
 
+
+   static {
+      initSingletons();
+   }
+
+
+   public static void initSingletons() {
+      final ILogger logger = new Logger_WebGL(LogLevel.InfoLevel);
+      final IFactory factory = new Factory_WebGL();
+      final IStringUtils stringUtils = new StringUtils_WebGL();
+      final IStringBuilder stringBuilder = new StringBuilder_WebGL();
+      final IMathUtils mathUtils = new MathUtils_WebGL();
+      final IJSONParser jsonParser = new JSONParser_WebGL();
+      final ITextUtils textUtils = new TextUtils_WebGL();
+      final IDeviceAttitude deviceAttitude = new DeviceAttitude_WebGL();
+      final IDeviceLocation deviceLocation = new DeviceLocation_WebGL();
+
+      G3MWidget.initSingletons( //
+               logger, //
+               factory, //
+               stringUtils, //
+               stringBuilder, //
+               mathUtils, //
+               jsonParser, //
+               textUtils, //
+               deviceAttitude, //
+               deviceLocation);
+   }
+
+
    private final Canvas         _canvas;
    private JavaScriptObject     _webGLContext;
    private int                  _width;
    private int                  _height;
+   private int                  _physicalWidth;
+   private int                  _physicalHeight;
    private MotionEventProcessor _motionEventProcessor;
    private GL                   _gl;
    private G3MWidget            _g3mWidget;
+   private float                _devicePixelRatio = 1;
 
 
    public G3MWidget_WebGL() {
-      initSingletons();
-
       _canvas = Canvas.createIfSupported();
       if (_canvas == null) {
          initWidget(createUnsupportedMessage("Your browser does not support the HTML5 Canvas."));
@@ -79,9 +95,7 @@ public class G3MWidget_WebGL
          return;
       }
 
-
       initWidget(_canvas);
-      onSizeChanged(1, 1);
 
       final INativeGL nativeGL = new NativeGL_WebGL(_webGLContext);
       _gl = new GL(nativeGL);
@@ -188,21 +202,6 @@ public class G3MWidget_WebGL
    }
 
 
-   public static void initSingletons() {
-      final ILogger logger = new Logger_WebGL(LogLevel.InfoLevel);
-      final IFactory factory = new Factory_WebGL();
-      final IStringUtils stringUtils = new StringUtils_WebGL();
-      final IStringBuilder stringBuilder = new StringBuilder_WebGL();
-      final IMathUtils mathUtils = new MathUtils_WebGL();
-      final IJSONParser jsonParser = new JSONParser_WebGL();
-      final ITextUtils textUtils = new TextUtils_WebGL();
-      final IDeviceAttitude devAtt = new DeviceAttitude_WebGL();
-      final IDeviceLocation devLoc = new DeviceLocation_WebGL();
-
-      G3MWidget.initSingletons(logger, factory, stringUtils, stringBuilder, mathUtils, jsonParser, textUtils, devAtt, devLoc);
-   }
-
-
    @Override
    public void onBrowserEvent(final Event event) {
       _canvas.setFocus(true);
@@ -227,48 +226,35 @@ public class G3MWidget_WebGL
    }-*/;
 
 
-   private static native float getDevicePixelRatio() /*-{
+   private static native float jsGetDevicePixelRatio() /*-{
 		return $wnd.devicePixelRatio || 1;
    }-*/;
 
 
+   public float getDevicePixelRatio() {
+      return _devicePixelRatio;
+   }
+
+
    private void onSizeChanged(final int width,
                               final int height) {
-
       if ((_width != width) || (_height != height)) {
          _width = width;
          _height = height;
          setPixelSize(_width, _height);
 
-         final float devicePixelRatio = getDevicePixelRatio();
-
-         final int logicalWidth = Math.round(_width * devicePixelRatio);
-         final int logicalHeight = Math.round(_height * devicePixelRatio);
-         _canvas.setCoordinateSpaceWidth(logicalWidth);
-         _canvas.setCoordinateSpaceHeight(logicalHeight);
-
-
-         jsOnResizeViewport(logicalWidth, logicalHeight);
-         if (_g3mWidget != null) {
-            _g3mWidget.onResizeViewportEvent(logicalWidth, logicalHeight);
-         }
+         _devicePixelRatio = jsGetDevicePixelRatio();
+         _physicalWidth = Math.round(_width * _devicePixelRatio);
+         _physicalHeight = Math.round(_height * _devicePixelRatio);
+         _canvas.setCoordinateSpaceWidth(_physicalWidth);
+         _canvas.setCoordinateSpaceHeight(_physicalHeight);
       }
    }
 
 
    private void renderG3MWidget() {
-      _g3mWidget.render(_width, _height);
+      _g3mWidget.render(_physicalWidth, _physicalHeight);
    }
-
-
-   private native void jsOnResizeViewport(final int width,
-                                          final int height) /*-{
-		var webGLContext = this.@org.glob3.mobile.specific.G3MWidget_WebGL::_webGLContext;
-
-		webGLContext.viewport(0, 0, width, height);
-		webGLContext.clear(webGLContext.COLOR_BUFFER_BIT
-				| webGLContext.DEPTH_BUFFER_BIT);
-   }-*/;
 
 
    private native void jsDefineG3MBrowserObjects() /*-{
@@ -276,14 +262,6 @@ public class G3MWidget_WebGL
 
 		// URL Object
 		$wnd.g3mURL = $wnd.URL || $wnd.webkitURL;
-
-		// IndexedDB
-		//		$wnd.g3mIDB = $wnd.indexedDB || $wnd.webkitIndexedDB
-		//				|| $wnd.mozIndexedDB || $wnd.OIndexedDB || $wnd.msIndexedDB;
-		//		$wnd.g3mIDBTransaction = $wnd.IDBTransaction
-		//				|| $wnd.webkitIDBTransaction || $wnd.OIDBTransaction
-		//				|| $wnd.msIDBTransaction;
-		//		$wnd.g3mDBVersion = 1;
 
 		// Animation
 		// Provides requestAnimationFrame in a cross browser way.
@@ -311,16 +289,17 @@ public class G3MWidget_WebGL
 
    private native JavaScriptObject jsGetWebGLContext(JavaScriptObject jsCanvas) /*-{
 		var context = null;
-		var contextNames = [ "experimental-webgl", "webgl", "webkit-3d",
-				"moz-webgl" ];
 
 		if (jsCanvas != null) {
+			var contextNames = [ "webgl", "experimental-webgl", "webkit-3d",
+					"moz-webgl" ];
 			for ( var cn in contextNames) {
 				try {
 					context = jsCanvas.getContext(contextNames[cn], {
 						preserveDrawingBuffer : true,
 						alpha : false,
-						preferLowPowerToHighPerformance : true
+						preferLowPowerToHighPerformance : true,
+						antialias : false
 					});
 				} catch (e) {
 				}
@@ -349,62 +328,9 @@ public class G3MWidget_WebGL
    }
 
 
-   public void initWidget(final IStorage storage,
-                          final IDownloader downloader,
-                          final IThreadUtils threadUtils,
-                          final ICameraActivityListener cameraActivityListener,
-                          final Planet planet,
-                          final java.util.ArrayList<ICameraConstrainer> cameraConstrainers,
-                          final CameraRenderer cameraRenderer,
-                          final Renderer mainRenderer,
-                          final ProtoRenderer busyRenderer,
-                          final ErrorRenderer errorRenderer,
-                          final Renderer hudRenderer,
-                          final Color backgroundColor,
-                          final boolean logFPS,
-                          final boolean logDownloaderStatistics,
-                          final GInitializationTask initializationTask,
-                          final boolean autoDeleteInitializationTask,
-                          final java.util.ArrayList<PeriodicalTask> periodicalTasks,
-                          final WidgetUserData userData,
-                          final SceneLighting sceneLighting,
-                          final InitialCameraPositionProvider initialCameraPositionProvider,
-                          final InfoDisplay infoDisplay) {
-
-      _g3mWidget = G3MWidget.create( //
-               _gl, //
-               storage, //
-               downloader, //
-               threadUtils, //
-               cameraActivityListener, //
-               planet, //
-               cameraConstrainers, //
-               cameraRenderer, //
-               mainRenderer, //
-               busyRenderer, //
-               errorRenderer, //
-               hudRenderer, //
-               backgroundColor, //
-               logFPS, //
-               logDownloaderStatistics, //
-               initializationTask, //
-               autoDeleteInitializationTask, //
-               periodicalTasks, //
-               createGPUProgramManager(), //
-               sceneLighting, //
-               initialCameraPositionProvider, //
-               infoDisplay, //
-               ViewMode.MONO);
-
-      _g3mWidget.setUserData(userData);
-
-      startWidget();
-   }
-
-
    public void startWidget() {
       if (_g3mWidget != null) {
-         _motionEventProcessor = new MotionEventProcessor(_g3mWidget, _canvas.getCanvasElement());
+         _motionEventProcessor = new MotionEventProcessor(this, _canvas.getCanvasElement());
          jsAddResizeHandler(_canvas.getCanvasElement());
 
          jsStartRenderLoop();
@@ -486,5 +412,13 @@ public class G3MWidget_WebGL
    public GL getGL() {
       return _gl;
    }
+
+
+   void onTouchEvent(final TouchEvent event) {
+      if (_g3mWidget != null) {
+         _g3mWidget.onTouchEvent(event);
+      }
+   }
+
 
 }

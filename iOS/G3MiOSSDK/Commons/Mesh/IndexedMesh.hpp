@@ -14,10 +14,12 @@ class IShortBuffer;
 
 class IndexedMesh : public AbstractMesh {
 private:
-  IShortBuffer*       _indices;
-  bool _ownsIndices;
+  IShortBuffer* _indices;
+  const bool    _ownsIndices;
+
 protected:
-  void rawRender(const G3MRenderContext* rc) const;
+  void renderMesh(const G3MRenderContext* rc,
+                  GLState* glState) const;
 
 public:
   IndexedMesh(const int primitive,
@@ -30,7 +32,6 @@ public:
               float pointSize = 1,
               const Color* flatColor = NULL,
               IFloatBuffer* colors = NULL,
-              const float colorsIntensity = 0.0f,
               bool depthTest = true,
               IFloatBuffer* normals = NULL,
               bool polygonOffsetFill = false,
@@ -38,10 +39,11 @@ public:
               float polygonOffsetUnits = 0);
 
   ~IndexedMesh();
-  
+
   const IShortBuffer* getIndices() const {
     return _indices;
   }
+
 };
 
 #endif

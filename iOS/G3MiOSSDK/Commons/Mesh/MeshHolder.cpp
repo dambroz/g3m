@@ -7,3 +7,10 @@
 //
 
 #include "MeshHolder.hpp"
+
+#include "Vector3D.hpp"
+
+
+const Vector3D MeshHolder::getVertex(const size_t index) const {
+  return _mesh->getVertex(index);
+}

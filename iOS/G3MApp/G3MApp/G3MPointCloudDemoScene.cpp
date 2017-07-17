@@ -24,8 +24,14 @@
 #include <G3MiOSSDK/GLConstants.hpp>
 #include <G3MiOSSDK/MeshRenderer.hpp>
 #include <G3MiOSSDK/IThreadUtils.hpp>
+#include <G3MiOSSDK/G3MContext.hpp>
+#include <G3MiOSSDK/GAsyncTask.hpp>
+#include <G3MiOSSDK/Geodetic3D.hpp>
+#include <G3MiOSSDK/Color.hpp>
+#include <G3MiOSSDK/IMathUtils.hpp>
 
 #include "G3MDemoModel.hpp"
+
 
 
 class G3MPointCloudDemoScene_ParserAsyncTask : public GAsyncTask {
@@ -93,9 +99,9 @@ public:
       }
       const double averageHeight = totalHeight / (size / 3.0);
 
-      const Color fromColor = Color::red();
-      const Color middleColor = Color::green();
-      const Color toColor = Color::blue();
+      const Color fromColor   = Color::RED;
+      const Color middleColor = Color::GREEN;
+      const Color toColor     = Color::BLUE;
 
       for (size_t i = 0; i < size; i = i + 3) {
         const double latDegrees = pointsJson->getAsNumber(i + 1, 0);
@@ -125,7 +131,6 @@ public:
                              pointSize,
                              NULL, // flatColor
                              colors.create(),
-                             1, // colorsIntensity
                              false);
 
       delete vertices;

@@ -13,6 +13,7 @@
 
 #include "Sector.hpp"
 class IStringUtils;
+class IMathUtils;
 
 
 class URLTemplateLayer : public RasterLayer {
@@ -33,7 +34,7 @@ private:
   const Sector _dataSector;
 
 protected:
-  std::string getLayerType() const {
+  const std::string getLayerType() const {
     return "URLTemplate";
   }
 
@@ -44,16 +45,16 @@ protected:
   const URL createURL(const Tile* tile) const;
 
 public:
-  static URLTemplateLayer* newMercator(const std::string&         urlTemplate,
-                                       const Sector&              dataSector,
-                                       const bool                 isTransparent,
-                                       const int                  firstLevel,
-                                       const int                  maxLevel,
-                                       const TimeInterval&        timeToCache,
-                                       const bool                 readExpired  = true,
-                                       const float                transparency = 1,
-                                       const LayerCondition*      condition    = NULL,
-                                       std::vector<const Info*>*  layerInfo    = new std::vector<const Info*>());
+  static URLTemplateLayer* newMercator(const std::string&        urlTemplate,
+                                       const Sector&             dataSector,
+                                       const bool                isTransparent,
+                                       const int                 firstLevel,
+                                       const int                 maxLevel,
+                                       const TimeInterval&       timeToCache,
+                                       const bool                readExpired  = true,
+                                       const float               transparency = 1,
+                                       const LayerCondition*     condition    = NULL,
+                                       std::vector<const Info*>* layerInfo    = new std::vector<const Info*>());
 
   static URLTemplateLayer* newWGS84(const std::string&        urlTemplate,
                                     const Sector&             dataSector,

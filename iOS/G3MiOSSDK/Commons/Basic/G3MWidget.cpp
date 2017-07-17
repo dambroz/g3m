@@ -26,7 +26,6 @@
 #include "CameraRenderer.hpp"
 #include "IStorage.hpp"
 #include "OrderedRenderable.hpp"
-#include <math.h>
 #include "GInitializationTask.hpp"
 #include "ITextUtils.hpp"
 #include "TouchEvent.hpp"
@@ -40,6 +39,12 @@
 #include "IDeviceLocation.hpp"
 #include "IDeviceInfo.hpp"
 #include "InitialCameraPositionProvider.hpp"
+#include "G3MRenderContext.hpp"
+#include "Planet.hpp"
+#include "ErrorHandling.hpp"
+#include "GLState.hpp"
+#include "FrustumPolicy.hpp"
+#include "NearFrustumRenderer.hpp"
 
 
 void G3MWidget::initSingletons(ILogger*            logger,
@@ -79,6 +84,7 @@ G3MWidget::G3MWidget(GL*                                  gl,
                      ProtoRenderer*                       busyRenderer,
                      ErrorRenderer*                       errorRenderer,
                      Renderer*                            hudRenderer,
+                     NearFrustumRenderer*                 nearFrustumRenderer,
                      const Color&                         backgroundColor,
                      const bool                           logFPS,
                      const bool                           logDownloaderStatistics,
@@ -89,7 +95,8 @@ G3MWidget::G3MWidget(GL*                                  gl,
                      SceneLighting*                       sceneLighting,
                      const InitialCameraPositionProvider* initialCameraPositionProvider,
                      InfoDisplay*                         infoDisplay,
-                     ViewMode                             viewMode):
+                     ViewMode                             viewMode,
+                     const FrustumPolicy*                 frustumPolicy):
 _frameTasksExecutor( new FrameTasksExecutor() ),
 _effectsScheduler( new EffectsScheduler() ),
 _gl(gl),
@@ -105,10 +112,12 @@ _mainRenderer(mainRenderer),
 _busyRenderer(busyRenderer),
 _errorRenderer(errorRenderer),
 _hudRenderer(hudRenderer),
+_nearFrustumRenderer(nearFrustumRenderer),
 _width(1),
 _height(1),
-_currentCamera(new Camera(1)),
-_nextCamera(new Camera(2)),
+_frustumPolicy(frustumPolicy),
+_currentCamera(new Camera(1, frustumPolicy->copy())),
+_nextCamera(new Camera(2, frustumPolicy->copy())),
 _backgroundColor( new Color(backgroundColor) ),
 _timer(IFactory::instance()->createTimer()),
 _renderCounter(0),
@@ -162,6 +171,9 @@ _auxCam(NULL)
   if (_hudRenderer != NULL) {
     _hudRenderer->initialize(_context);
   }
+  if (_nearFrustumRenderer != NULL) {
+    _nearFrustumRenderer->initialize(_context);
+  }
   _currentCamera->initialize(_context);
   _nextCamera->initialize(_context);
 
@@ -202,16 +214,8 @@ _auxCam(NULL)
                                         _storage,
                                         _gpuProgramManager,
                                         _surfaceElevationProvider,
-                                        _viewMode);
-
-
-  //#ifdef C_CODE
-  //  delete _rendererState;
-  //  _rendererState = new RenderState( calculateRendererState() );
-  //#endif
-  //#ifdef JAVA_CODE
-  //  _rendererState = calculateRendererState();
-  //#endif
+                                        _viewMode,
+                                        this);
 }
 
 
@@ -227,6 +231,7 @@ G3MWidget* G3MWidget::create(GL*                                  gl,
                              ProtoRenderer*                       busyRenderer,
                              ErrorRenderer*                       errorRenderer,
                              Renderer*                            hudRenderer,
+                             NearFrustumRenderer*                 nearFrustumRenderer,
                              const Color&                         backgroundColor,
                              const bool                           logFPS,
                              const bool                           logDownloaderStatistics,
@@ -236,8 +241,9 @@ G3MWidget* G3MWidget::create(GL*                                  gl,
                              GPUProgramManager*                   gpuProgramManager,
                              SceneLighting*                       sceneLighting,
                              const InitialCameraPositionProvider* initialCameraPositionProvider,
-                             InfoDisplay* infoDisplay,
-                             ViewMode viewMode) {
+                             InfoDisplay*                         infoDisplay,
+                             ViewMode                             viewMode,
+                             const FrustumPolicy*                 frustumPolicy) {
 
   return new G3MWidget(gl,
                        storage,
@@ -251,6 +257,7 @@ G3MWidget* G3MWidget::create(GL*                                  gl,
                        busyRenderer,
                        errorRenderer,
                        hudRenderer,
+                       nearFrustumRenderer,
                        backgroundColor,
                        logFPS,
                        logDownloaderStatistics,
@@ -261,7 +268,8 @@ G3MWidget* G3MWidget::create(GL*                                  gl,
                        sceneLighting,
                        initialCameraPositionProvider,
                        infoDisplay,
-                       viewMode);
+                       viewMode,
+                       frustumPolicy);
 }
 
 G3MWidget::~G3MWidget() {
@@ -276,6 +284,7 @@ G3MWidget::~G3MWidget() {
   delete _busyRenderer;
   delete _errorRenderer;
   delete _hudRenderer;
+  delete _nearFrustumRenderer;
   delete _gl;
   delete _effectsScheduler;
   delete _currentCamera;
@@ -312,10 +321,12 @@ G3MWidget::~G3MWidget() {
   if(_infoDisplay != NULL) {
     delete _infoDisplay;
   }
-  
+
   delete _rightEyeCam;
   delete _leftEyeCam;
   delete _auxCam;
+
+  delete _frustumPolicy;
 }
 
 void G3MWidget::removeAllPeriodicalTasks() {
@@ -336,6 +347,12 @@ void G3MWidget::notifyTouchEvent(const G3MEventContext &ec,
       if (_hudRenderer != NULL) {
         if (_hudRenderer->isEnable()) {
           handled = _hudRenderer->onTouchEvent(&ec, touchEvent);
+        }
+      }
+
+      if (!handled && (_nearFrustumRenderer != NULL)) {
+        if (_nearFrustumRenderer->isEnable()) {
+          handled = _nearFrustumRenderer->onTouchEvent(&ec, touchEvent);
         }
       }
 
@@ -443,6 +460,9 @@ void G3MWidget::onResizeViewportEvent(int width, int height) {
   if (_hudRenderer != NULL) {
     _hudRenderer->onResizeViewportEvent(&ec, width, height);
   }
+  if (_nearFrustumRenderer != NULL) {
+    _nearFrustumRenderer->onResizeViewportEvent(&ec, width, height);
+  }
 }
 
 
@@ -483,6 +503,16 @@ RenderState G3MWidget::calculateRendererState() {
     }
   }
 
+  if (_nearFrustumRenderer != NULL) {
+    RenderState nearFrustumRendererRenderState = _nearFrustumRenderer->getRenderState(_renderContext);
+    if (nearFrustumRendererRenderState._type == RENDER_ERROR) {
+      return nearFrustumRendererRenderState;
+    }
+    else if (nearFrustumRendererRenderState._type == RENDER_BUSY) {
+      busyFlag = true;
+    }
+  }
+
   RenderState mainRendererRenderState = _mainRenderer->getRenderState(_renderContext);
   if (mainRendererRenderState._type == RENDER_ERROR) {
     return mainRendererRenderState;
@@ -494,38 +524,40 @@ RenderState G3MWidget::calculateRendererState() {
   return busyFlag ? RenderState::busy() : RenderState::ready();
 }
 
+
+
 void G3MWidget::rawRender(const RenderState_Type renderStateType) {
-  
+
   if (_rootState == NULL) {
     _rootState = new GLState();
   }
-  
+
   switch (renderStateType) {
     case RENDER_READY:
       setSelectedRenderer(_mainRenderer);
       _cameraRenderer->render(_renderContext, _rootState);
-      
+
       _sceneLighting->modifyGLState(_rootState, _renderContext);  //Applying ilumination to rootState
-      
+
       if (_mainRenderer->isEnable()) {
         _mainRenderer->render(_renderContext, _rootState);
       }
-      
+
       break;
-      
+
     case RENDER_BUSY:
       setSelectedRenderer(_busyRenderer);
       _busyRenderer->render(_renderContext, _rootState);
       break;
-      
+
     default:
       _errorRenderer->setErrors( _rendererState->getErrors() );
       setSelectedRenderer(_errorRenderer);
       _errorRenderer->render(_renderContext, _rootState);
       break;
-      
+
   }
-  
+
   std::vector<OrderedRenderable*>* orderedRenderables = _renderContext->getSortedOrderedRenderables();
   if (orderedRenderables != NULL) {
     const size_t orderedRenderablesCount = orderedRenderables->size();
@@ -534,79 +566,88 @@ void G3MWidget::rawRender(const RenderState_Type renderStateType) {
       orderedRenderable->render(_renderContext);
       delete orderedRenderable;
     }
-    
+
     orderedRenderables->clear();
   }
-  
-  if (_hudRenderer != NULL) {
-    if (renderStateType == RENDER_READY) {
+
+  if (renderStateType == RENDER_READY) {
+    if (_nearFrustumRenderer != NULL) {
+      if (_nearFrustumRenderer->isEnable()) {
+        _nearFrustumRenderer->render(_currentCamera->getFrustumData(),
+                                     this,
+                                     _renderContext,
+                                     _rootState);
+      }
+    }
+
+    if (_hudRenderer != NULL) {
       if (_hudRenderer->isEnable()) {
         _hudRenderer->render(_renderContext, _rootState);
       }
     }
   }
-
-
+  
 }
 
 void G3MWidget::rawRenderStereoParallelAxis(const RenderState_Type renderStateType) {
-  
+
   if (_auxCam == NULL) {
-    _auxCam = new Camera(-1);
+    _auxCam = new Camera(-1, _frustumPolicy->copy());
   }
-  
+
   const bool eyesUpdated = _auxCam->getTimestamp() != _currentCamera->getTimestamp();
   if (eyesUpdated) {
-    
+
     //Saving central camera
     if (_rightEyeCam == NULL) {
-      _rightEyeCam = new Camera(-1);
+      _rightEyeCam = new Camera(-1, _frustumPolicy->copy());
     }
     if (_leftEyeCam == NULL) {
-      _leftEyeCam = new Camera(-1);
+      _leftEyeCam = new Camera(-1, _frustumPolicy->copy());
     }
     _auxCam->copyFrom(*_currentCamera, true);
     _leftEyeCam->copyFrom(*_auxCam, true);
     _rightEyeCam->copyFrom(*_auxCam, true);
-    
+
     //For 3D scenes we create the "eyes" cameras
     if (renderStateType == RENDER_READY) {
-      Vector3D camPos = _currentCamera->getCartesianPosition();
-      Vector3D camCenter = _currentCamera->getCenter();
-      Vector3D eyesDirection = _currentCamera->getUp().cross(_currentCamera->getViewDirection()).normalized();
-      const double eyesSeparation = 200;// 0.03;
-      Vector3D up = _currentCamera->getUp();
-      
+      const Vector3D camPos = _currentCamera->getCartesianPosition();
+      const Vector3D camCenter = _currentCamera->getCenter();
+      const Vector3D eyesDirection = _currentCamera->getUp().cross(_currentCamera->getViewDirection()).normalized();
+//      const double halfEyesSeparation = 0.07 / 2.0;
+      const double halfEyesSeparation = 0.001;
+      const Vector3D up = _currentCamera->getUp();
+
       const Angle hFOV_2 = _currentCamera->getHorizontalFOV().times(0.5);
-      const Angle vFOV = _currentCamera->getVerticalFOV();
-      
-      Vector3D leftEyePosition = camPos.add(eyesDirection.times(-eyesSeparation));
-      Vector3D leftEyeCenter   = camCenter.add(eyesDirection.times(-eyesSeparation));
+      const Angle vFOV   = _currentCamera->getVerticalFOV();
+
+      const Vector3D leftEyePosition = camPos.add(eyesDirection.times(-halfEyesSeparation));
+      const Vector3D leftEyeCenter   = camCenter.add(eyesDirection.times(-halfEyesSeparation));
       _leftEyeCam->setLookAtParams(leftEyePosition.asMutableVector3D(),
                                    leftEyeCenter.asMutableVector3D(),
                                    up.asMutableVector3D());
       _leftEyeCam->setFOV(vFOV, hFOV_2);
 
-      Vector3D rightEyePosition = camPos.add(eyesDirection.times(eyesSeparation));
-      Vector3D rightEyeCenter   = camCenter.add(eyesDirection.times(eyesSeparation));
-      
+      const Vector3D rightEyePosition = camPos.add(eyesDirection.times(halfEyesSeparation));
+      const Vector3D rightEyeCenter   = camCenter.add(eyesDirection.times(halfEyesSeparation));
+
       _rightEyeCam->setLookAtParams(rightEyePosition.asMutableVector3D(),
                                     rightEyeCenter.asMutableVector3D(),
                                     up.asMutableVector3D());
       _rightEyeCam->setFOV(vFOV, hFOV_2);
     }
-    
+
   }
 
   const int halfWidth = _width / 2;
-  
+
   _gl->clearScreen(*_backgroundColor);
   //Left
   _gl->viewport(0, 0, halfWidth, _height);
   _currentCamera->copyFrom(*_leftEyeCam,
                            true);
   rawRender(renderStateType);
-  
+
   //Right
   _gl->viewport(halfWidth, 0, halfWidth, _height);
   _currentCamera->copyFrom(*_rightEyeCam,
@@ -618,7 +659,7 @@ void G3MWidget::rawRenderStereoParallelAxis(const RenderState_Type renderStateTy
 }
 
 void G3MWidget::rawRenderMono(const RenderState_Type renderStateType) {
-  
+
   _gl->clearScreen(*_backgroundColor);
   _gl->viewport(0, 0, _width, _height);
   rawRender(renderStateType);
@@ -684,14 +725,16 @@ void G3MWidget::render(int width, int height) {
   const size_t cameraConstrainersCount = _cameraConstrainers.size();
   for (size_t i = 0; i< cameraConstrainersCount; i++) {
     ICameraConstrainer* constrainer = _cameraConstrainers[i];
-    constrainer->onCameraChange(_planet,
-                                _currentCamera,
-                                _nextCamera);
+    const bool validNextCamera = constrainer->onCameraChange(_planet,
+                                                             _currentCamera,
+                                                             _nextCamera);
+    if (!validNextCamera) {
+      _nextCamera->copyFrom(*_currentCamera, true);
+    }
   }
-  _planet->applyCameraConstrainers(_currentCamera, _nextCamera);
+  _planet->applyCameraConstrains(_currentCamera, _nextCamera);
 
-  _currentCamera->copyFrom(*_nextCamera,
-                           false);
+  _currentCamera->copyFrom(*_nextCamera, false);
 
 #ifdef C_CODE
   delete _rendererState;
@@ -707,7 +750,7 @@ void G3MWidget::render(int width, int height) {
   _effectsScheduler->doOneCyle(_renderContext);
 
   _frameTasksExecutor->doPreRenderCycle(_renderContext);
-  
+
   switch (_viewMode) {
     case MONO:
       rawRenderMono(renderStateType);
@@ -718,7 +761,7 @@ void G3MWidget::render(int width, int height) {
     default:
       THROW_EXCEPTION("WRONG VIEW MODE.");
   }
-  
+
   //Removing unused programs
   if (_renderCounter % _nFramesBeetweenProgramsCleanUp == 0) {
     _gpuProgramManager->removeUnused();
@@ -787,6 +830,9 @@ void G3MWidget::onPause() {
   if (_hudRenderer != NULL) {
     _hudRenderer->onPause(_context);
   }
+  if (_nearFrustumRenderer != NULL) {
+    _nearFrustumRenderer->onPause(_context);
+  }
 
   _downloader->onPause(_context);
   _storage->onPause(_context);
@@ -805,6 +851,9 @@ void G3MWidget::onResume() {
   if (_hudRenderer != NULL) {
     _hudRenderer->onResume(_context);
   }
+  if (_nearFrustumRenderer != NULL) {
+    _nearFrustumRenderer->onResume(_context);
+  }
 
   _effectsScheduler->onResume(_context);
 
@@ -821,6 +870,9 @@ void G3MWidget::onDestroy() {
   _errorRenderer->onDestroy(_context);
   if (_hudRenderer != NULL) {
     _hudRenderer->onDestroy(_context);
+  }
+  if (_nearFrustumRenderer != NULL) {
+    _nearFrustumRenderer->onDestroy(_context);
   }
 
   _downloader->onDestroy(_context);
@@ -951,6 +1003,10 @@ void G3MWidget::setBackgroundColor(const Color& backgroundColor) {
   _backgroundColor = new Color(backgroundColor);
 }
 
+Color G3MWidget::getBackgroundColor() const {
+  return *_backgroundColor;
+}
+
 PlanetRenderer* G3MWidget::getPlanetRenderer() {
   return _mainRenderer->getPlanetRenderer();
 }
@@ -981,7 +1037,7 @@ bool G3MWidget::setRenderedSector(const Sector& sector) {
 //  }
 //}
 
-void G3MWidget::changedRendererInfo(const size_t rendererIdentifier,
+void G3MWidget::changedRendererInfo(const size_t rendererID,
                                     const std::vector<const Info*>& info) {
   if(_infoDisplay != NULL) {
     _infoDisplay->changedInfo(info);
@@ -1003,10 +1059,41 @@ void G3MWidget::setViewMode(ViewMode viewMode) {
       delete _rightEyeCam;
       _rightEyeCam = NULL;
     }
-
+    
     _context->setViewMode(_viewMode);
     _renderContext->setViewMode(_viewMode);
-
+    
     onResizeViewportEvent(_width, _height);
+  }
+}
+
+void G3MWidget::changeToFixedFrustum(double zNear,
+                                     double zFar) {
+  switch (_viewMode) {
+    case MONO:
+      _currentCamera->setFixedFrustum(zNear, zFar);
+      break;
+    case STEREO:
+      _leftEyeCam->setFixedFrustum(zNear, zFar);
+      _rightEyeCam->setFixedFrustum(zNear, zFar);
+      _currentCamera->setFixedFrustum(zNear, zFar);
+      break;
+    default:
+      THROW_EXCEPTION("WRONG VIEW MODE :: changeToFixedFrustum");
+  }
+}
+
+void G3MWidget::resetFrustumPolicy() {
+  switch (_viewMode) {
+    case MONO:
+      _currentCamera->resetFrustumPolicy();
+      break;
+    case STEREO:
+      _leftEyeCam->resetFrustumPolicy();
+      _rightEyeCam->resetFrustumPolicy();
+      _currentCamera->resetFrustumPolicy();
+      break;
+    default:
+      THROW_EXCEPTION("WRONG VIEW MODE :: resetFrustumPolicy");
   }
 }

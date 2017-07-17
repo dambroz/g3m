@@ -1,13 +1,14 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class PlanetRenderer extends DefaultRenderer implements ChangedListener, ChangedInfoListener, SurfaceElevationProvider
 {
   private TileTessellator _tessellator;
   private ElevationDataProvider _elevationDataProvider;
   private boolean _ownsElevationDataProvider;
+  private DEMProvider _demProvider;
   private TileTexturizer _texturizer;
   private LayerSet _layerSet;
-  private final TilesRenderParameters _tilesRenderParameters;
-  private final boolean _showStatistics;
+  private TilesRenderParameters _tilesRenderParameters;
+  private boolean _showStatistics;
   private final boolean _logTilesPetitions;
   private ITileVisitor _tileVisitor = null;
   private TileLODTester _tileLODTester;
@@ -261,7 +262,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     }
   }
 
-  private long _tileDownloadPriority;
+  private long _tileTextureDownloadPriority;
 
   private float _verticalExaggeration;
 
@@ -299,7 +300,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     {
       _errors.clear();
       _layerTilesRenderParameters = null;
-      _layerTilesRenderParameters = _layerSet.createLayerTilesRenderParameters(_tilesRenderParameters._forceFirstLevelTilesRenderOnStart, _errors);
+      _layerTilesRenderParameters = _layerSet.createLayerTilesRenderParameters(_errors);
       if (_layerTilesRenderParameters == null)
       {
         ILogger.instance().logError("LayerSet returned a NULL for LayerTilesRenderParameters, can't render planet");
@@ -320,11 +321,12 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   private java.util.ArrayList<Tile> _toVisit = new java.util.ArrayList<Tile>();
   private java.util.ArrayList<Tile> _toVisitInNextIteration = new java.util.ArrayList<Tile>();
 
-  public PlanetRenderer(TileTessellator tessellator, ElevationDataProvider elevationDataProvider, boolean ownsElevationDataProvider, float verticalExaggeration, TileTexturizer texturizer, LayerSet layerSet, TilesRenderParameters tilesRenderParameters, boolean showStatistics, long tileDownloadPriority, Sector renderedSector, boolean renderTileMeshes, boolean logTilesPetitions, ChangedRendererInfoListener changedInfoListener, TouchEventType touchEventTypeOfTerrainTouchListener, TileLODTester tileLODTester, TileVisibilityTester tileVisibilityTester)
+  public PlanetRenderer(TileTessellator tessellator, ElevationDataProvider elevationDataProvider, boolean ownsElevationDataProvider, DEMProvider demProvider, float verticalExaggeration, TileTexturizer texturizer, LayerSet layerSet, TilesRenderParameters tilesRenderParameters, boolean showStatistics, long tileTextureDownloadPriority, Sector renderedSector, boolean renderTileMeshes, boolean logTilesPetitions, ChangedRendererInfoListener changedInfoListener, TouchEventType touchEventTypeOfTerrainTouchListener, TileLODTester tileLODTester, TileVisibilityTester tileVisibilityTester)
   {
      _tessellator = tessellator;
      _elevationDataProvider = elevationDataProvider;
      _ownsElevationDataProvider = ownsElevationDataProvider;
+     _demProvider = demProvider;
      _verticalExaggeration = verticalExaggeration;
      _texturizer = texturizer;
      _layerSet = layerSet;
@@ -335,11 +337,11 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
      _lastCamera = null;
      _firstRender = false;
      _lastVisibleSector = null;
-     _tileDownloadPriority = tileDownloadPriority;
+     _tileTextureDownloadPriority = tileTextureDownloadPriority;
      _allFirstLevelTilesAreTextureSolved = false;
      _recreateTilesPending = false;
      _glState = new GLState();
-     _renderedSector = renderedSector.isEquals(Sector.fullSphere())? null : new Sector(renderedSector);
+     _renderedSector = renderedSector.isEquals(Sector.FULL_SPHERE)? null : new Sector(renderedSector);
      _layerTilesRenderParameters = null;
      _layerTilesRenderParametersDirty = true;
      _renderTileMeshes = renderTileMeshes;
@@ -354,7 +356,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   
     _layerSet.setChangedInfoListener(this);
   
-    _rendererIdentifier = -1;
+    _rendererID = -1;
   
     if (_tileLODTester == null)
     {
@@ -377,8 +379,16 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   
     if (_tessellator != null)
        _tessellator.dispose();
-    if (_elevationDataProvider != null)
-       _elevationDataProvider.dispose();
+    if (_ownsElevationDataProvider)
+    {
+      if (_elevationDataProvider != null)
+         _elevationDataProvider.dispose();
+    }
+    if (_demProvider != null)
+    {
+      _demProvider.cancel();
+      _demProvider._release();
+    }
     if (_texturizer != null)
        _texturizer.dispose();
     if (_tilesRenderParameters != null)
@@ -412,6 +422,21 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     super.dispose();
   }
 
+  public final boolean isShowStatistics()
+  {
+    return _showStatistics;
+  }
+
+  public final void setShowStatistics(boolean showStatistics)
+  {
+    _showStatistics = showStatistics;
+  }
+
+  public final void setIncrementalTileQuality(boolean incrementalTileQuality)
+  {
+    _tilesRenderParameters._incrementalTileQuality = incrementalTileQuality;
+  }
+
   public final void initialize(G3MContext context)
   {
     _context = context;
@@ -429,6 +454,10 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     if (_elevationDataProvider != null)
     {
       _elevationDataProvider.initialize(context);
+    }
+    if (_demProvider != null)
+    {
+      _demProvider.initialize(context);
     }
   }
 
@@ -475,9 +504,10 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     _prc._tilesRenderParameters = _tilesRenderParameters;
     _prc._lastSplitTimer = _lastSplitTimer;
     _prc._elevationDataProvider = _elevationDataProvider;
+    _prc._demProvider = _demProvider;
     _prc._tessellator = _tessellator;
     _prc._layerSet = _layerSet;
-    _prc._tileDownloadPriority = _tileDownloadPriority;
+    _prc._tileTextureDownloadPriority = _tileTextureDownloadPriority;
     _prc._texWidthSquared = texWidthSquared;
     _prc._texHeightSquared = texHeightSquared;
     _prc._nowInMS = nowInMS;
@@ -489,7 +519,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     _tileVisibilityTester.renderStarted();
   
   
-    if (_firstRender && _tilesRenderParameters._forceFirstLevelTilesRenderOnStart)
+    if (_firstRender)
     {
       // force one render pass of the firstLevelTiles tiles to make the (toplevel) textures
       // loaded as they will be used as last-chance fallback texture for any tile.
@@ -590,6 +620,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
           ILogger.instance().logInfo("Touched on position %s", position.description());
           ILogger.instance().logInfo("Touched on pixels %s", normalizedPixel.description());
           ILogger.instance().logInfo("Camera position=%s heading=%f pitch=%f", _lastCamera.getGeodeticPosition().description(), _lastCamera.getHeading()._degrees, _lastCamera.getPitch()._degrees);
+          ILogger.instance().logInfo("Camera zNear=%f zFar=%f", _lastCamera.getFrustumData()._zNear, _lastCamera.getFrustumData()._zFar);
   
           if (_texturizer.onTerrainTouchEvent(ec, position, tile, _layerSet))
           {
@@ -634,17 +665,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     final LayerTilesRenderParameters layerTilesRenderParameters = getLayerTilesRenderParameters();
     if (layerTilesRenderParameters == null)
     {
-      if (_errors.isEmpty())
-      {
-        if (_tilesRenderParameters._forceFirstLevelTilesRenderOnStart)
-        {
-          return RenderState.busy();
-        }
-      }
-      else
-      {
-        return RenderState.error(_errors);
-      }
+      return _errors.isEmpty() ? RenderState.busy() : RenderState.error(_errors);
     }
   
     final RenderState layerSetRenderState = _layerSet.getRenderState();
@@ -661,6 +682,15 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
       }
     }
   
+    if (_demProvider != null)
+    {
+      final RenderState demProviderRenderState = _demProvider.getRenderState();
+      if (demProviderRenderState._type != RenderState_Type.RENDER_READY)
+      {
+        return demProviderRenderState;
+      }
+    }
+  
     final RenderState texturizerRenderState = _texturizer.getRenderState(_layerSet);
     if (texturizerRenderState._type != RenderState_Type.RENDER_READY)
     {
@@ -673,33 +703,31 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   
       final int firstLevelTilesCount = _firstLevelTiles.size();
   
-      if (_tilesRenderParameters._forceFirstLevelTilesRenderOnStart)
+      _statistics.clear();
+  
+      _prc._tileLODTester = _tileLODTester;
+      _prc._tileVisibilityTester = _tileVisibilityTester;
+      _prc._frustumInModelCoordinates = null;
+      _prc._verticalExaggeration = _verticalExaggeration;
+      _prc._layerTilesRenderParameters = layerTilesRenderParameters;
+      _prc._texturizer = _texturizer;
+      _prc._tilesRenderParameters = _tilesRenderParameters;
+      _prc._lastSplitTimer = _lastSplitTimer;
+      _prc._elevationDataProvider = _elevationDataProvider;
+      _prc._demProvider = _demProvider;
+      _prc._tessellator = _tessellator;
+      _prc._layerSet = _layerSet;
+      _prc._tileTextureDownloadPriority = _tileTextureDownloadPriority;
+      _prc._texWidthSquared = -1;
+      _prc._texHeightSquared = -1;
+      _prc._nowInMS = -1;
+      _prc._renderTileMeshes = _renderTileMeshes;
+      _prc._logTilesPetitions = _logTilesPetitions;
+  
+      for (int i = 0; i < firstLevelTilesCount; i++)
       {
-        _statistics.clear();
-  
-        _prc._tileLODTester = _tileLODTester;
-        _prc._tileVisibilityTester = _tileVisibilityTester;
-        _prc._frustumInModelCoordinates = null;
-        _prc._verticalExaggeration = _verticalExaggeration;
-        _prc._layerTilesRenderParameters = layerTilesRenderParameters;
-        _prc._texturizer = _texturizer;
-        _prc._tilesRenderParameters = _tilesRenderParameters;
-        _prc._lastSplitTimer = _lastSplitTimer;
-        _prc._elevationDataProvider = _elevationDataProvider;
-        _prc._tessellator = _tessellator;
-        _prc._layerSet = _layerSet;
-        _prc._tileDownloadPriority = _tileDownloadPriority;
-        _prc._texWidthSquared = -1;
-        _prc._texHeightSquared = -1;
-        _prc._nowInMS = -1;
-        _prc._renderTileMeshes = _renderTileMeshes;
-        _prc._logTilesPetitions = _logTilesPetitions;
-  
-        for (int i = 0; i < firstLevelTilesCount; i++)
-        {
-          Tile tile = _firstLevelTiles.get(i);
-          tile.prepareForFullRendering(rc, _prc);
-        }
+        Tile tile = _firstLevelTiles.get(i);
+        tile.prepareForFullRendering(rc, _prc);
       }
   
       for (int i = 0; i < firstLevelTilesCount; i++)
@@ -709,7 +737,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
       }
     }
   
-    if (_tilesRenderParameters._forceFirstLevelTilesRenderOnStart && !_allFirstLevelTilesAreTextureSolved)
+    if (!_allFirstLevelTilesAreTextureSolved)
     {
       final int firstLevelTilesCount = _firstLevelTiles.size();
       for (int i = 0; i < firstLevelTilesCount; i++)
@@ -823,21 +851,21 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   /**
    * Set the download-priority used by Tiles (for downloading textures).
    *
-   * @param tileDownloadPriority: new value for download priority of textures
+   * @param tileTextureDownloadPriority: new value for download priority of textures
    */
-  public final void setTileDownloadPriority(long tileDownloadPriority)
+  public final void setTileTextureDownloadPriority(long tileTextureDownloadPriority)
   {
-    _tileDownloadPriority = tileDownloadPriority;
+    _tileTextureDownloadPriority = tileTextureDownloadPriority;
   }
 
   /**
    * Return the current value for the download priority of textures
    *
-   * @return _tileDownloadPriority: long
+   * @return _tileTextureDownloadPriority: long
    */
-  public final long getTileDownloadPriority()
+  public final long getTileTextureDownloadPriority()
   {
-    return _tileDownloadPriority;
+    return _tileTextureDownloadPriority;
   }
 
   /**
@@ -888,12 +916,12 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
 
   public final boolean setRenderedSector(Sector sector)
   {
-    if ((_renderedSector != null && !_renderedSector.isEquals(sector)) || (_renderedSector == null && !sector.isEquals(Sector.fullSphere())))
+    if ((_renderedSector != null && !_renderedSector.isEquals(sector)) || (_renderedSector == null && !sector.isEquals(Sector.FULL_SPHERE)))
     {
       if (_renderedSector != null)
          _renderedSector.dispose();
   
-      if (sector.isEquals(Sector.fullSphere()))
+      if (sector.isEquals(Sector.FULL_SPHERE))
       {
         _renderedSector = null;
       }
@@ -919,6 +947,30 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     }
   }
 
+  public final void setDEMProvider(DEMProvider demProvider)
+  {
+    if (_demProvider != demProvider)
+    {
+      if (_demProvider != null)
+      {
+        _demProvider.cancel();
+        _demProvider._release();
+      }
+  
+      _demProvider = demProvider;
+  
+      if (_demProvider != null)
+      {
+        //_demProvider->setChangedListener(this);
+        if (_context != null)
+        {
+          _demProvider.initialize(_context); // initializing DEMProvider in case it wasn't
+        }
+      }
+  
+      changed();
+    }
+  }
   public final void setElevationDataProvider(ElevationDataProvider elevationDataProvider, boolean owned)
   {
     if (_elevationDataProvider != elevationDataProvider)
@@ -958,6 +1010,11 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     return _elevationDataProvider;
   }
 
+  public final DEMProvider getDEMProvider()
+  {
+    return _demProvider;
+  }
+
   public final void setRenderTileMeshes(boolean renderTileMeshes)
   {
     _renderTileMeshes = renderTileMeshes;
@@ -972,7 +1029,7 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
   {
     if (_changedInfoListener != null)
     {
-      _changedInfoListener.changedRendererInfo(_rendererIdentifier, info);
+      _changedInfoListener.changedRendererInfo(_rendererID, info);
     }
   }
 
@@ -981,19 +1038,19 @@ public class PlanetRenderer extends DefaultRenderer implements ChangedListener, 
     return _verticalExaggeration;
   }
 
-  public final void setChangedRendererInfoListener(ChangedRendererInfoListener changedInfoListener, int rendererIdentifier)
+  public final void setChangedRendererInfoListener(ChangedRendererInfoListener changedInfoListener, int rendererID)
   {
     if (_changedInfoListener != null)
     {
       ILogger.instance().logWarning("Changed Renderer Info Listener of PlanetRenderer already set");
     }
   
-    _rendererIdentifier = rendererIdentifier;
+    _rendererID = rendererID;
     _changedInfoListener = changedInfoListener;
   
     if(_changedInfoListener != null)
     {
-      _changedInfoListener.changedRendererInfo(rendererIdentifier, _layerSet.getInfo());
+      _changedInfoListener.changedRendererInfo(rendererID, _layerSet.getInfo());
     }
   }
 

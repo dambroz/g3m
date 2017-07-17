@@ -1,7 +1,6 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class MeshRenderer extends DefaultRenderer
 {
-
 
   private static class LoadQueueItem
   {
@@ -39,6 +38,7 @@ public class MeshRenderer extends DefaultRenderer
   }
 
 
+  private boolean _visibilityCulling;
 
   private java.util.ArrayList<Mesh> _meshes = new java.util.ArrayList<Mesh>();
 
@@ -93,14 +93,15 @@ public class MeshRenderer extends DefaultRenderer
   
   }
 
-  private boolean _showNormals;
-
-
 
   public MeshRenderer()
   {
+     this(true);
+  }
+  public MeshRenderer(boolean visibilityCulling)
+  {
+     _visibilityCulling = visibilityCulling;
      _glState = new GLState();
-     _showNormals = false;
     _context = null;
   }
 
@@ -122,7 +123,6 @@ public class MeshRenderer extends DefaultRenderer
   public final void addMesh(Mesh mesh)
   {
     _meshes.add(mesh);
-    mesh.showNormals(_showNormals);
   }
 
   public final void clearMeshes()
@@ -181,17 +181,27 @@ public class MeshRenderer extends DefaultRenderer
       final Camera camera = rc.getCurrentCamera();
   
       updateGLState(camera);
-  
-      final Frustum frustum = camera.getFrustumInModelCoordinates();
-  
       _glState.setParent(glState);
   
-      for (int i = 0; i < meshesCount; i++)
+      if (_visibilityCulling)
       {
-        Mesh mesh = _meshes.get(i);
-        final BoundingVolume boundingVolume = mesh.getBoundingVolume();
-        if ((boundingVolume != null) && boundingVolume.touchesFrustum(frustum))
+        final Frustum frustum = camera.getFrustumInModelCoordinates();
+  
+        for (int i = 0; i < meshesCount; i++)
         {
+          Mesh mesh = _meshes.get(i);
+          final BoundingVolume boundingVolume = mesh.getBoundingVolume();
+          if ((boundingVolume == null) || boundingVolume.touchesFrustum(frustum))
+          {
+            mesh.render(rc, _glState);
+          }
+        }
+      }
+      else
+      {
+        for (int i = 0; i < meshesCount; i++)
+        {
+          Mesh mesh = _meshes.get(i);
           mesh.render(rc, _glState);
         }
       }
@@ -348,17 +358,6 @@ public class MeshRenderer extends DefaultRenderer
   public final void loadBSONMesh(URL url, Color color, MeshLoadListener listener, boolean deleteListener)
   {
     loadBSONMesh(url, color, DownloadPriority.MEDIUM, TimeInterval.fromDays(30), true, listener, deleteListener);
-  }
-
-  public final void showNormals(boolean v)
-  {
-    _showNormals = v;
-    final int meshesCount = _meshes.size();
-    for (int i = 0; i < meshesCount; i++)
-    {
-      Mesh mesh = _meshes.get(i);
-      mesh.showNormals(v);
-    }
   }
 
 

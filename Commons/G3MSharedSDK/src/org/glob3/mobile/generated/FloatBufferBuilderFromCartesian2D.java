@@ -1,4 +1,12 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
+//
+//  FloatBufferBuilderFromCartesian2D.cpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 11/9/16.
+//
+//
+
 //
 //  FloatBufferBuilderFromCartesian2D.hpp
 //  G3MiOSSDK
@@ -6,6 +14,9 @@ package org.glob3.mobile.generated;
 //  Created by José Miguel S N on 06/09/12.
 //
 
+
+
+//class Vector2F;
 
 
 public class FloatBufferBuilderFromCartesian2D extends FloatBufferBuilder

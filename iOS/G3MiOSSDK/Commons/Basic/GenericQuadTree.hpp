@@ -13,6 +13,8 @@
 #include "Geodetic2D.hpp"
 #include "GEOVectorTileImageProvider.hpp"
 #include <cstdlib>
+#include "ILogger.hpp"
+
 
 class GenericQuadTree_Node;
 
@@ -51,7 +53,7 @@ public:
 
 };
 
-///////////////////////////////////////////////////////////////////////////////////////
+
 class GenericQuadTree_Element {
 public:
   const void*  _element;
@@ -127,7 +129,7 @@ public:
 #endif
   }
 };
-///////////////////////////////////////////////////////////////////////////////////////
+
 
 
 class GenericQuadTree_Node {
@@ -274,7 +276,7 @@ public:
 
 };
 
-////////////////////////////////////////////////////////////////////////////
+
 
 class GenericQuadTree_TESTER {
 

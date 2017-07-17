@@ -17,12 +17,11 @@
 #include "IFloatBuffer.hpp"
 #include "GLConstants.hpp"
 #include "GLGlobalState.hpp"
-#include "IGLTextureId.hpp"
+#include "IGLTextureID.hpp"
 #include "GPUProgram.hpp"
 
 #include <list>
 
-class IGLProgramId;
 class IGLUniformID;
 class GPUProgramManager;
 class GPUProgramState;
@@ -34,16 +33,15 @@ private:
   INativeGL* const _nativeGL;
 
 
-  /////////////////////////////////////////////////
   //CURRENT GL STATUS
   GLGlobalState* _currentGLGlobalState;
   GPUProgram*    _currentGPUProgram;
-  /////////////////////////////////////////////////
 
-  std::list<const IGLTextureId*> _texturesIdBag;
-  long                           _texturesIdAllocationCounter;
 
-  const IGLTextureId* getGLTextureId();
+  std::list<const IGLTextureID*> _texturesIDBag;
+  long                           _texturesIDAllocationCounter;
+
+  const IGLTextureID* getGLTextureID();
 
   GLGlobalState *_clearScreenState; //State used to clear screen with certain color
 
@@ -55,7 +53,7 @@ public:
 
   GL(INativeGL* const nativeGL) :
   _nativeGL(nativeGL),
-  _texturesIdAllocationCounter(0),
+  _texturesIDAllocationCounter(0),
   _currentGPUProgram(NULL),
   _clearScreenState(NULL)
   {
@@ -77,27 +75,21 @@ public:
     GLGlobalState::initializationAvailable();
 
     _currentGLGlobalState = new GLGlobalState();
-    _clearScreenState = new GLGlobalState();
-
-    //    _currentState = GLGlobalState::newDefault(); //Init after constants
+    _clearScreenState     = new GLGlobalState();
   }
 
   void clearScreen(const Color& color);
 
-  //  void drawElements(int mode,
-  //                    IShortBuffer* indices, const GLGlobalState& state,
-  //                    GPUProgramManager& progManager,
-  //                    const GPUProgramState* gpuState);
-
   void drawElements(int mode,
-                    IShortBuffer* indices, const GLState* state,
+                    IShortBuffer* indices,
+                    const GLState* state,
                     GPUProgramManager& progManager);
 
-  //  void drawArrays(int mode,
-  //                  int first,
-  //                  int count, const GLGlobalState& state,
-  //                  GPUProgramManager& progManager,
-  //                  const GPUProgramState* gpuState);
+  void drawElements(int mode,
+                    IShortBuffer* indices,
+                    int count,
+                    const GLState* state,
+                    GPUProgramManager& progManager);
 
   void drawArrays(int mode,
                   int first,
@@ -106,15 +98,11 @@ public:
 
   int getError();
 
-  const IGLTextureId* uploadTexture(const IImage* image,
+  const IGLTextureID* uploadTexture(const IImage* image,
                                     int format,
                                     bool generateMipmap);
 
-  void deleteTexture(const IGLTextureId* textureId);
-
-  //  void getViewport(int v[]) {
-  //    _nativeGL->getIntegerv(GLVariable::viewport(), v);
-  //  }
+  void deleteTexture(const IGLTextureID* textureID);
 
   ~GL() {
 #ifdef C_CODE
@@ -162,7 +150,6 @@ public:
   }
 
   bool deleteProgram(const GPUProgram* program) {
-
     if (program == NULL) {
       return false;
     }
@@ -254,10 +241,11 @@ public:
     return _currentGLGlobalState;
   }
 
-  void viewport(int x, int y, int width, int height) const{
+  void viewport(int x, int y, int width, int height) const {
     _nativeGL->viewport(x, y, width, height);
   }
   
+  void clearDepthBuffer();
   
 };
 

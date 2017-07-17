@@ -38,6 +38,10 @@
 #include "EllipsoidalPlanet.hpp"
 #include "PlanetRenderer.hpp"
 #include "InitialCameraPositionProvider.hpp"
+#include "AtmosphereRenderer.hpp"
+#include "DynamicFrustumPolicy.hpp"
+#include "CameraRenderer.hpp"
+#include "NearFrustumRenderer.hpp"
 
 
 IG3MBuilder::IG3MBuilder() :
@@ -54,6 +58,7 @@ _planetRendererBuilder(NULL),
 _busyRenderer(NULL),
 _errorRenderer(NULL),
 _hudRenderer(NULL),
+_nearFrustumRenderer(NULL),
 _renderers(NULL),
 _initializationTask(NULL),
 _autoDeleteInitializationTask(true),
@@ -63,7 +68,9 @@ _logDownloaderStatistics(false),
 _userData(NULL),
 _sceneLighting(NULL),
 _shownSector(NULL),
-_infoDisplay(NULL)
+_infoDisplay(NULL),
+_atmosphere(false),
+_frustumPolicy(NULL)
 {
 }
 
@@ -90,6 +97,7 @@ IG3MBuilder::~IG3MBuilder() {
   delete _busyRenderer;
   delete _errorRenderer;
   delete _hudRenderer;
+  delete _nearFrustumRenderer;
   delete _backgroundColor;
   delete _initializationTask;
   if (_periodicalTasks) {
@@ -101,6 +109,7 @@ IG3MBuilder::~IG3MBuilder() {
   delete _userData;
   delete _planetRendererBuilder;
   delete _shownSector;
+  delete _frustumPolicy;
 }
 
 /**
@@ -230,16 +239,19 @@ Renderer* IG3MBuilder::getHUDRenderer() const {
   return _hudRenderer;
 }
 
+NearFrustumRenderer* IG3MBuilder::getNearFrustumRenderer() const {
+  return _nearFrustumRenderer;
+}
+
 /**
  * Returns the _backgroundColor. If it does not exist, it will be default initializated.
  *
  * @return _backgroundColor: Color*
  */
 Color* IG3MBuilder::getBackgroundColor() {
-  if (!_backgroundColor) {
-    _backgroundColor = Color::newFromRGBA((float)0, (float)0.1, (float)0.2, (float)1);
+  if (_backgroundColor == NULL) {
+    _backgroundColor = Color::newFromRGBA(0.0f, 0.1f, 0.2f, 1.0f);
   }
-
   return _backgroundColor;
 }
 
@@ -447,16 +459,16 @@ void IG3MBuilder::addCameraConstraint(ICameraConstrainer* cameraConstraint) {
  *
  * @param cameraConstraints - std::vector<ICameraConstrainer*>
  */
-void IG3MBuilder::setCameraConstrainsts(std::vector<ICameraConstrainer*> cameraConstraints) {
-  if (_cameraConstraints) {
-    ILogger::instance()->logWarning("LOGIC WARNING: camera contraints previously set will be ignored and deleted");
+void IG3MBuilder::setCameraConstraints(const std::vector<ICameraConstrainer*>& cameraConstraints) {
+  if (_cameraConstraints == NULL) {
+    _cameraConstraints = new std::vector<ICameraConstrainer*>;
+  }
+  else {
+    ILogger::instance()->logWarning("LOGIC WARNING: camera constraints previously set will be ignored and deleted");
     for (unsigned int i = 0; i < _cameraConstraints->size(); i++) {
       delete _cameraConstraints->at(i);
     }
     _cameraConstraints->clear();
-  }
-  else {
-    _cameraConstraints = new std::vector<ICameraConstrainer*>;
   }
   for (unsigned int i = 0; i < cameraConstraints.size(); i++) {
     _cameraConstraints->push_back(cameraConstraints[i]);
@@ -486,15 +498,10 @@ void IG3MBuilder::setCameraRenderer(CameraRenderer *cameraRenderer) {
  * @param backgroundColor - cannot be NULL.
  */
 void IG3MBuilder::setBackgroundColor(Color* backgroundColor) {
-  if (_backgroundColor) {
-    ILogger::instance()->logError("LOGIC ERROR: backgroundColor already initialized");
-    return;
+  if (backgroundColor != _backgroundColor) {
+    delete _backgroundColor;
+    _backgroundColor = backgroundColor;
   }
-  if (!backgroundColor) {
-    ILogger::instance()->logError("LOGIC ERROR: backgroundColor cannot be NULL");
-    return;
-  }
-  _backgroundColor = backgroundColor;
 }
 
 /**
@@ -538,6 +545,18 @@ void IG3MBuilder::setHUDRenderer(Renderer* hudRenderer) {
   _hudRenderer = hudRenderer;
 }
 
+void IG3MBuilder::setNearFrustumRenderer(NearFrustumRenderer* nearFrustumRenderer) {
+  if (_nearFrustumRenderer) {
+    ILogger::instance()->logError("LOGIC ERROR: nearFrustumRenderer already initialized");
+    return;
+  }
+  if (!nearFrustumRenderer) {
+    ILogger::instance()->logError("LOGIC ERROR: nearFrustumRenderer cannot be NULL");
+    return;
+  }
+  _nearFrustumRenderer = nearFrustumRenderer;
+}
+
 /**
  * Adds a new renderer to the renderers list.
  * The renderers list will be initializated with a default renderers set (empty set at the moment).
@@ -563,7 +582,7 @@ void IG3MBuilder::addRenderer(Renderer *renderer) {
  *
  * @param renderers - std::vector<Renderer*>
  */
-void IG3MBuilder::setRenderers(std::vector<Renderer*> renderers) {
+void IG3MBuilder::setRenderers(const std::vector<Renderer*>& renderers) {
   if (!containsPlanetRenderer(renderers)) {
     ILogger::instance()->logError("LOGIC ERROR: renderers list must contain at least an instance of the PlanetRenderer class");
     return;
@@ -617,7 +636,7 @@ void IG3MBuilder::addPeriodicalTask(PeriodicalTask* periodicalTask) {
  *
  * @param periodicalTasks - std::vector<PeriodicalTask*>
  */
-void IG3MBuilder::setPeriodicalTasks(std::vector<PeriodicalTask*> periodicalTasks) {
+void IG3MBuilder::setPeriodicalTasks(const std::vector<PeriodicalTask*>& periodicalTasks) {
   if (_periodicalTasks) {
     ILogger::instance()->logWarning("LOGIC WARNING: periodical tasks previously set will be ignored and deleted");
     for (unsigned int i = 0; i < _periodicalTasks->size(); i++) {
@@ -668,6 +687,25 @@ void IG3MBuilder::setUserData(WidgetUserData *userData) {
   _userData = userData;
 }
 
+void IG3MBuilder::setAtmosphere(const bool atmosphere) {
+  _atmosphere = atmosphere;
+  setBackgroundColor( _atmosphere ? Color::newFromRGBA(0, 0, 0, 1) : NULL );
+}
+
+FrustumPolicy* IG3MBuilder::getFrustumPolicy() {
+  if (_frustumPolicy == NULL) {
+    _frustumPolicy = new DynamicFrustumPolicy();
+  }
+  return _frustumPolicy;
+}
+
+void IG3MBuilder::setFrustumPolicy(FrustumPolicy* frustumPolicy) {
+  if (frustumPolicy != _frustumPolicy) {
+    delete _frustumPolicy;
+    _frustumPolicy = frustumPolicy;
+  }
+}
+
 /**
  * Creates the generic widget using all the parameters previously set.
  *
@@ -681,14 +719,14 @@ G3MWidget* IG3MBuilder::create() {
 
 #warning HUDRenderer doesn't work when this code is uncommented
   InfoDisplay* infoDisplay = NULL;
-//  InfoDisplay* infoDisplay = getInfoDisplay();
-//  if (infoDisplay == NULL) {
-//    Default_HUDRenderer* hud = new Default_HUDRenderer();
-//
-//    infoDisplay = new DefaultInfoDisplay(hud);
-//
-//    addRenderer(hud);
-//  }
+  //  InfoDisplay* infoDisplay = getInfoDisplay();
+  //  if (infoDisplay == NULL) {
+  //    Default_HUDRenderer* hud = new Default_HUDRenderer();
+  //
+  //    infoDisplay = new DefaultInfoDisplay(hud);
+  //
+  //    addRenderer(hud);
+  //  }
 
   /*
    * If any renderers were set or added, the main renderer will be a composite renderer.
@@ -698,13 +736,22 @@ G3MWidget* IG3MBuilder::create() {
    */
   Renderer* mainRenderer = NULL;
   if (getRenderers()->size() > 0) {
-    mainRenderer = new CompositeRenderer();
+    CompositeRenderer* composite = new CompositeRenderer();
+
+    if (_atmosphere) {
+      // has be here, before the PlanetRenderer
+      composite->addRenderer(new AtmosphereRenderer());
+    }
+
     if (!containsPlanetRenderer(*getRenderers())) {
-      ((CompositeRenderer *) mainRenderer)->addRenderer(getPlanetRendererBuilder()->create());
+      composite->addRenderer(getPlanetRendererBuilder()->create());
     }
+
     for (unsigned int i = 0; i < getRenderers()->size(); i++) {
-      ((CompositeRenderer *) mainRenderer)->addRenderer(getRenderers()->at(i));
+      composite->addRenderer(getRenderers()->at(i));
     }
+
+    mainRenderer = composite;
   }
   else {
     mainRenderer = getPlanetRendererBuilder()->create();
@@ -728,6 +775,7 @@ G3MWidget* IG3MBuilder::create() {
                                             getBusyRenderer(),
                                             getErrorRenderer(),
                                             getHUDRenderer(),
+                                            getNearFrustumRenderer(),
                                             *getBackgroundColor(),
                                             getLogFPS(),
                                             getLogDownloaderStatistics(),
@@ -738,7 +786,8 @@ G3MWidget* IG3MBuilder::create() {
                                             getSceneLighting(),
                                             icpp,
                                             infoDisplay,
-                                            MONO);
+                                            MONO,
+                                            getFrustumPolicy());
 
   g3mWidget->setUserData(getUserData());
 
@@ -759,6 +808,7 @@ G3MWidget* IG3MBuilder::create() {
   _busyRenderer = NULL;
   _errorRenderer = NULL;
   _hudRenderer = NULL;
+  _nearFrustumRenderer = NULL;
   _initializationTask = NULL;
   delete _periodicalTasks;
   _periodicalTasks = NULL;
@@ -767,13 +817,15 @@ G3MWidget* IG3MBuilder::create() {
   delete _shownSector;
   _shownSector = NULL;
 
+  _frustumPolicy = NULL;
+
   return g3mWidget;
 }
 
 std::vector<ICameraConstrainer*>* IG3MBuilder::createDefaultCameraConstraints() {
   std::vector<ICameraConstrainer*>* cameraConstraints = new std::vector<ICameraConstrainer*>;
-  SimpleCameraConstrainer* scc = new SimpleCameraConstrainer();
-  cameraConstraints->push_back(scc);
+
+  cameraConstraints->push_back( SimpleCameraConstrainer::createDefault() );
 
   return cameraConstraints;
 }
@@ -808,7 +860,7 @@ std::vector<Renderer*>* IG3MBuilder::createDefaultRenderers() {
  *
  * @return bool
  */
-bool IG3MBuilder::containsPlanetRenderer(std::vector<Renderer*> renderers) {
+bool IG3MBuilder::containsPlanetRenderer(const std::vector<Renderer*>& renderers) {
   for (unsigned int i = 0; i < renderers.size(); i++) {
     if (renderers[i]->isPlanetRenderer()) {
       return true;
@@ -838,7 +890,7 @@ GPUProgramManager* IG3MBuilder::getGPUProgramManager() {
 SceneLighting* IG3MBuilder::getSceneLighting() {
   if (_sceneLighting == NULL) {
     _sceneLighting = new CameraFocusSceneLighting(Color::fromRGBA((float)0.5, (float)0.5, (float)0.5, (float)1.0),
-                                                  Color::white());
+                                                  Color::WHITE);
   }
   return _sceneLighting;
 }
@@ -853,7 +905,7 @@ void IG3MBuilder::setShownSector(const Sector& sector) {
 
 Sector IG3MBuilder::getShownSector() const {
   if (_shownSector == NULL) {
-    return Sector::fullSphere();
+    return Sector::FULL_SPHERE;
   }
   return *_shownSector;
 }

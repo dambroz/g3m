@@ -10,9 +10,7 @@
 #define __G3MiOSSDK__MeshHolder__
 
 #include "Mesh.hpp"
-#include "Vector3D.hpp"
 
-//#include "GPUProgramState.hpp"
 
 class MeshHolder : public Mesh {
 private:
@@ -35,18 +33,15 @@ public:
   ~MeshHolder() {
     delete _mesh;
 #ifdef JAVA_CODE
-  super.dispose();
+    super.dispose();
 #endif
-
   }
 
   size_t getVertexCount() const {
     return _mesh->getVertexCount();
   }
 
-  const Vector3D getVertex(size_t i) const {
-    return _mesh->getVertex(i);
-  }
+  const Vector3D getVertex(const size_t index) const;
 
   BoundingVolume* getBoundingVolume() const {
     return _mesh->getBoundingVolume();
@@ -56,18 +51,15 @@ public:
     return _mesh->isTransparent(rc);
   }
 
-  void rawRender(const G3MRenderContext* rc, const GLState* parentGLState) const {
+  void rawRender(const G3MRenderContext* rc,
+                 const GLState* parentGLState) const {
     _mesh->render(rc, parentGLState);
   }
 
-  void showNormals(bool v) const {
-    _mesh->showNormals(v);
-  }
-  
   Mesh* getMesh() const {
     return _mesh;
   }
-
+  
 };
 
 #endif

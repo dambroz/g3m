@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  IMathUtils.cpp
 //  G3MiOSSDK
@@ -16,17 +16,20 @@ package org.glob3.mobile.generated;
 
 
 
-//#define SIN(x) java.lang.Math.sin(x)
-//#define COS(x) java.lang.Math.cos(x)
-//#define TAN(x) java.lang.Math.tan(x)
-//#define NAND java.lang.Double.NaN
-//#define NANF java.lang.Float.NaN
+//#define SIN(x) Math.sin(x)
+//#define COS(x) Math.cos(x)
+//#define TAN(x) Math.tan(x)
+//#define NAND Double.NaN
+//#define NANF Float.NaN
 
 
 //#define PI 3.14159265358979323846264338327950288
 //#define HALF_PI 1.57079632679489661923132169163975144
 
 //#define ISNAN(x) (x != x)
+
+//#define TO_RADIANS(degrees) ((degrees) / 180.0 * 3.14159265358979323846264338327950288)
+//#define TO_DEGREES(radians) ((radians) * (180.0 / 3.14159265358979323846264338327950288))
 
 //class Geodetic2D;
 //class Angle;
@@ -54,9 +57,6 @@ public abstract class IMathUtils
   public void dispose()
   {
   }
-
-//  virtual double NanD() const = 0;
-//  virtual float  NanF() const = 0;
 
   public abstract double sin(double v);
   public abstract float sin(float v);
@@ -163,8 +163,8 @@ public abstract class IMathUtils
   public abstract double ceil(double d);
   public abstract float ceil(float f);
 
-  public abstract double fmod(double d1, double d2);
-  public abstract float fmod(float f1, float f2);
+  public abstract double mod(double d1, double d2);
+  public abstract float mod(float f1, float f2);
 
   public double linearInterpolation(double from, double to, double alpha)
   {
@@ -291,5 +291,7 @@ public abstract class IMathUtils
   {
     return (b == 0) ? a : gcd(b, a % b);
   }
+
+  public abstract double copySign(double a, double b);
 
 }

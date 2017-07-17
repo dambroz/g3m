@@ -15,6 +15,8 @@
 #include "Color.hpp"
 #include "Sphere.hpp"
 #include "Vector2F.hpp"
+#include "G3MRenderContext.hpp"
+
 
 Box::~Box() {
   delete _mesh;
@@ -214,7 +216,7 @@ Vector3D Box::intersectionWithRay(const Vector3D& origin,
     if (!inter.isNan() && contains(inter)) return inter;
   }
   
-  return Vector3D::nan();  
+  return Vector3D::NANV;
 }
 
 
@@ -338,4 +340,8 @@ const std::string Box::description() const {
   const std::string s = isb->getString();
   delete isb;
   return s;
+}
+
+Box* Box::copy() const {
+  return new Box(*this);
 }

@@ -1,11 +1,10 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class MarkWidget
 {
   private GLState _glState;
   private Geometry2DGLFeature _geo2Dfeature;
   private ViewportExtentGLFeature _viewportExtentGLFeature;
   private IImage _image;
-  private String _imageName;
   private IImageBuilder _imageBuilder;
   private TexturesHandler _texHandler;
 
@@ -45,7 +44,6 @@ public class MarkWidget
   private void prepareWidget(IImage image, String imageName)
   {
     _image = image;
-    _imageName = imageName;
   
     _halfWidth = (float) image.getWidth() / 2.0f;
     _halfHeight = (float) image.getHeight() / 2.0f;
@@ -75,7 +73,7 @@ public class MarkWidget
     texCoords.add(0.0f, 0.0f); // vertex 3
     texCoords.add(1.0f, 0.0f); // vertex 4
   
-    final TextureIDReference textureID = _texHandler.getTextureIDReference(_image, GLFormat.rgba(), _imageName, false);
+    final TextureIDReference textureID = _texHandler.getTextureIDReference(_image, GLFormat.rgba(), imageName, false);
   
     // #warning TODO: share unit texCoords
     if (_textureMapping != null)
@@ -95,8 +93,8 @@ public class MarkWidget
      _viewportExtentGLFeature = null;
      _geo2Dfeature = null;
      _glState = null;
-     _x = java.lang.Float.NaN;
-     _y = java.lang.Float.NaN;
+     _x = Float.NaN;
+     _y = Float.NaN;
      _halfHeight = 0F;
      _halfWidth = 0F;
      _vertices = null;
@@ -138,8 +136,6 @@ public class MarkWidget
   {
     rc.getGL().drawArrays(GLPrimitive.triangleStrip(), 0, 4, _glState, rc.getGPUProgramManager()); // count -  first
   }
-//              float x,
-//              float y
 
   public final void setAndClampScreenPos(float x, float y, int viewportWidth, int viewportHeight, float margin)
   {
@@ -180,8 +176,8 @@ public class MarkWidget
     {
       _geo2Dfeature.setTranslation(0, 0);
     }
-    _x = java.lang.Float.NaN;
-    _y = java.lang.Float.NaN;
+    _x = Float.NaN;
+    _y = Float.NaN;
   }
 
   public final void onResizeViewportEvent(G3MEventContext ec, int width, int height)

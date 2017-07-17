@@ -8,10 +8,8 @@
 
 #include "SGNode.hpp"
 
-#include "GLGlobalState.hpp"
-//#include "GPUProgramState.hpp"
+#include "ILogger.hpp"
 
-#include "SGShape.hpp"
 
 SGNode::~SGNode() {
   const size_t childrenCount = _children.size();
@@ -21,24 +19,22 @@ SGNode::~SGNode() {
   }
 }
 
-
 void SGNode::initialize(const G3MContext* context,
-                        SGShape *shape) {
+                        const std::string& uriPrefix) {
   _context = context;
-  _shape = shape;
+  _uriPrefix = uriPrefix;
 
   const size_t childrenCount = _children.size();
   for (size_t i = 0; i < childrenCount; i++) {
     SGNode* child = _children[i];
-    child->initialize(context, shape);
+    child->initialize(_context, _uriPrefix);
   }
 }
 
 void SGNode::addNode(SGNode* child) {
-  //  child->setParent(this);
   _children.push_back(child);
   if (_context != NULL) {
-    child->initialize(_context, _shape);
+    child->initialize(_context, _uriPrefix);
   }
 }
 
@@ -63,12 +59,8 @@ void SGNode::cleanUpRender(const G3MRenderContext* rc) {
 }
 
 void SGNode::render(const G3MRenderContext* rc, const GLState* parentGLState, bool renderNotReadyShapes) {
-
-//  ILogger::instance()->logInfo("Rendering SG: " + description());
-
   const GLState* glState = createState(rc, parentGLState);
   if (glState != NULL) {
-
     prepareRender(rc);
 
     rawRender(rc, glState);

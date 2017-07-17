@@ -13,7 +13,6 @@
 #include "DefaultTileTexturizer.hpp"
 #include "GEOVectorLayer.hpp"
 #include "TileTessellator.hpp"
-#include "ElevationDataProvider.hpp"
 #include "LayerSet.hpp"
 #include "DefaultChessCanvasImageBuilder.hpp"
 #include "PlanetRenderer.hpp"
@@ -27,12 +26,14 @@
 #include "TimedCacheTileVisibilityTester.hpp"
 #include "OrTileLODTester.hpp"
 #include "GradualSplitsTileLODTester.hpp"
+#include "ElevationDataProvider.hpp"
+#include "DEMProvider.hpp"
+#include "ErrorHandling.hpp"
 
 
 PlanetRendererBuilder::PlanetRendererBuilder() :
 _showStatistics(false),
 _renderDebug(false),
-_forceFirstLevelTilesRenderOnStart(true),
 _incrementalTileQuality(false),
 _quality(QUALITY_LOW),
 _parameters(NULL),
@@ -41,8 +42,9 @@ _texturizer(NULL),
 _tileTessellator(NULL),
 _visibleSectorListeners(NULL),
 _stabilizationMilliSeconds(NULL),
-_tileDownloadPriority(DownloadPriority::HIGHER),
+_tileTextureDownloadPriority(DownloadPriority::HIGHER),
 _elevationDataProvider(NULL),
+_demProvider(NULL),
 _verticalExaggeration(0),
 _renderedSector(NULL),
 _renderTileMeshes(true),
@@ -67,6 +69,9 @@ PlanetRendererBuilder::~PlanetRendererBuilder() {
 
   delete _tileTessellator;
   delete _elevationDataProvider;
+  if (_demProvider != NULL) {
+    _demProvider->_release();
+  }
 
   delete _renderedSector;
 }
@@ -151,15 +156,6 @@ bool PlanetRendererBuilder::getRenderDebug() {
 }
 
 /**
- * Returns the forceFirstLevelTilesRenderOnStart flag.
- *
- * @return _forceFirstLevelTilesRenderOnStart: bool
- */
-bool PlanetRendererBuilder::getForceFirstLevelTilesRenderOnStart() {
-  return _forceFirstLevelTilesRenderOnStart;
-}
-
-/**
  * Returns the incrementalTileQuality flag.
  *
  * @return _incrementalTileQuality: bool
@@ -199,42 +195,38 @@ std::vector<long long>* PlanetRendererBuilder::getStabilizationMilliSeconds() {
 }
 
 /**
- * Returns the _tileDownloadPriority.
+ * Returns the _tileTextureDownloadPriority.
  *
- * @return _tileDownloadPriority: long long
+ * @return _tileTextureDownloadPriority: long long
  */
-long long PlanetRendererBuilder::getTileDownloadPriority() {
-  return _tileDownloadPriority;
+long long PlanetRendererBuilder::getTileTextureDownloadPriority() {
+  return _tileTextureDownloadPriority;
 }
 
 void PlanetRendererBuilder::setTileTessellator(TileTessellator *tileTessellator) {
   if (_tileTessellator) {
-    ILogger::instance()->logError("LOGIC ERROR: _tileTessellator already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _tileTessellator already initialized");
   }
   _tileTessellator = tileTessellator;
 }
 
 void PlanetRendererBuilder::setTileTexturizer(TileTexturizer *tileTexturizer) {
   if (_texturizer) {
-    ILogger::instance()->logError("LOGIC ERROR: _texturizer already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _texturizer already initialized");
   }
   _texturizer = tileTexturizer;
 }
 
 void PlanetRendererBuilder::setLayerSet(LayerSet *layerSet) {
   if (_layerSet) {
-    ILogger::instance()->logError("LOGIC ERROR: _layerSet already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _layerSet already initialized");
   }
   _layerSet = layerSet;
 }
 
 void PlanetRendererBuilder::setPlanetRendererParameters(TilesRenderParameters *parameters) {
   if (_parameters) {
-    ILogger::instance()->logError("LOGIC ERROR: _parameters already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _parameters already initialized");
   }
   _parameters = parameters;
 }
@@ -247,10 +239,6 @@ void PlanetRendererBuilder::setRenderDebug(const bool renderDebug) {
   _renderDebug = renderDebug;
 }
 
-void PlanetRendererBuilder::setForceFirstLevelTilesRenderOnStart(const bool forceFirstLevelTilesRenderOnStart) {
-  _forceFirstLevelTilesRenderOnStart = forceFirstLevelTilesRenderOnStart;
-}
-
 void PlanetRendererBuilder::setIncrementalTileQuality(const bool incrementalTileQuality) {
   _incrementalTileQuality = incrementalTileQuality;
 }
@@ -261,28 +249,37 @@ void PlanetRendererBuilder::addVisibleSectorListener(VisibleSectorListener* list
   getStabilizationMilliSeconds()->push_back(stabilizationInterval._milliseconds);
 }
 
-void PlanetRendererBuilder::setTileDownloadPriority(long long tileDownloadPriority) {
-  _tileDownloadPriority = tileDownloadPriority;
+void PlanetRendererBuilder::setTileTextureDownloadPriority(long long tileTextureDownloadPriority) {
+  _tileTextureDownloadPriority = tileTextureDownloadPriority;
 }
 
 void PlanetRendererBuilder::setElevationDataProvider(ElevationDataProvider* elevationDataProvider) {
   if (_elevationDataProvider != NULL) {
-    ILogger::instance()->logError("LOGIC ERROR: _elevationDataProvider already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _elevationDataProvider already initialized");
   }
   _elevationDataProvider = elevationDataProvider;
 }
 
+void PlanetRendererBuilder::setDEMProvider(DEMProvider* demProvider) {
+  if (_demProvider != NULL) {
+    THROW_EXCEPTION("LOGIC ERROR: _demProvider already initialized");
+  }
+  _demProvider = demProvider;
+}
+
 void PlanetRendererBuilder::setVerticalExaggeration(float verticalExaggeration) {
   if (_verticalExaggeration > 0.0f) {
-    ILogger::instance()->logError("LOGIC ERROR: _verticalExaggeration already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _verticalExaggeration already initialized");
   }
   _verticalExaggeration = verticalExaggeration;
 }
 
 ElevationDataProvider* PlanetRendererBuilder::getElevationDataProvider() {
   return _elevationDataProvider;
+}
+
+DEMProvider* PlanetRendererBuilder::getDEMProvider() {
+  return _demProvider;
 }
 
 float PlanetRendererBuilder::getVerticalExaggeration() {
@@ -298,11 +295,9 @@ ChangedRendererInfoListener* PlanetRendererBuilder::getChangedRendererInfoListen
 
 void PlanetRendererBuilder::setChangedRendererInfoListener(ChangedRendererInfoListener* changedInfoListener) {
   if (_changedInfoListener != NULL) {
-    ILogger::instance()->logError("LOGIC ERROR: ChangedInfoListener in Planet Render Builder already set");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: ChangedInfoListener in Planet Render Builder already set");
   }
   _changedInfoListener = changedInfoListener;
-  ILogger::instance()->logInfo("LOGIC INFO: ChangedInfoListener in Planet Render Builder set OK");
 }
 
 void PlanetRendererBuilder::setTouchEventTypeOfTerrainTouchListener(TouchEventType touchEventTypeOfTerrainTouchListener) {
@@ -317,9 +312,10 @@ void PlanetRendererBuilder::setDefaultTileBackgroundImage(IImageBuilder* default
   _defaultTileBackgroundImage = defaultTileBackgroundImage;
 }
 
-IImageBuilder* PlanetRendererBuilder::getDefaultTileBackgroundImageBuilder() const {
+IImageBuilder* PlanetRendererBuilder::getDefaultTileBackgroundImageBuilder() {
   if (_defaultTileBackgroundImage == NULL) {
-    return new DefaultChessCanvasImageBuilder(256, 256, Color::black(), Color::white(), 4);
+    // _defaultTileBackgroundImage = new DefaultChessCanvasImageBuilder(256, 256, Color::BLACK, Color::WHITE, 4);
+    _defaultTileBackgroundImage = new DefaultChessCanvasImageBuilder(256, 256, Color::WHITE, Color::TRANSPARENT, 4);
   }
   return _defaultTileBackgroundImage;
 }
@@ -336,12 +332,13 @@ PlanetRenderer* PlanetRendererBuilder::create() {
   PlanetRenderer* planetRenderer = new PlanetRenderer(getTileTessellator(),
                                                       getElevationDataProvider(),
                                                       true,
+                                                      getDEMProvider(),
                                                       getVerticalExaggeration(),
                                                       getTexturizer(),
                                                       layerSet,
                                                       getParameters(),
                                                       getShowStatistics(),
-                                                      getTileDownloadPriority(),
+                                                      getTileTextureDownloadPriority(),
                                                       getRenderedSector(),
                                                       getRenderTileMeshes(),
                                                       getLogTilesPetitions(),
@@ -365,6 +362,7 @@ PlanetRenderer* PlanetRendererBuilder::create() {
   _stabilizationMilliSeconds = NULL;
 
   _elevationDataProvider = NULL;
+  _demProvider = NULL;
 
   delete _renderedSector;
   _renderedSector = NULL;
@@ -376,7 +374,6 @@ PlanetRenderer* PlanetRendererBuilder::create() {
 
 TilesRenderParameters* PlanetRendererBuilder::createPlanetRendererParameters() {
   return new TilesRenderParameters(getRenderDebug(),
-                                   getForceFirstLevelTilesRenderOnStart(),
                                    getIncrementalTileQuality(),
                                    getQuality());
 }
@@ -401,15 +398,14 @@ LayerSet* PlanetRendererBuilder::createLayerSet() {
 
 void PlanetRendererBuilder::setRenderedSector(const Sector& sector) {
   if (_renderedSector != NULL) {
-    ILogger::instance()->logError("LOGIC ERROR: _renderedSector already initialized");
-    return;
+    THROW_EXCEPTION("LOGIC ERROR: _renderedSector already initialized");
   }
   _renderedSector = new Sector(sector);
 }
 
 Sector PlanetRendererBuilder::getRenderedSector() {
   if (_renderedSector == NULL) {
-    return Sector::fullSphere();
+    return Sector::FULL_SPHERE;
   }
   return *_renderedSector;
 }

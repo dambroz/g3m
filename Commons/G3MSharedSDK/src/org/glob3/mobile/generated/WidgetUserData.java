@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  G3MWidget.cpp
 //  G3MiOSSDK
@@ -15,6 +15,8 @@ package org.glob3.mobile.generated;
 
 
 
+//class IMathUtils;
+//class ILogger;
 //class G3MWidget;
 //class IFactory;
 //class IStringUtils;
@@ -55,6 +57,8 @@ package org.glob3.mobile.generated;
 //class SurfaceElevationProvider;
 //class GLState;
 //class G3MEventContext;
+//class FrustumPolicy;
+//class NearFrustumRenderer;
 
 
 public class WidgetUserData

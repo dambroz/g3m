@@ -23,7 +23,19 @@
 #include "IShortBuffer.hpp"
 #include "IndexedMesh.hpp"
 #include "IFactory.hpp"
+#include "GAsyncTask.hpp"
+#include "G3MRenderContext.hpp"
+#include "BoundingVolume.hpp"
+#include "Geodetic3D.hpp"
+#include "GLState.hpp"
 
+
+MeshRenderer::MeshRenderer(bool visibilityCulling):
+_visibilityCulling(visibilityCulling),
+_glState(new GLState())
+{
+  _context = NULL;
+}
 
 void MeshRenderer::clearMeshes() {
   const size_t meshesCount = _meshes.size();
@@ -64,15 +76,22 @@ void MeshRenderer::render(const G3MRenderContext* rc, GLState* glState) {
     const Camera* camera =  rc->getCurrentCamera();
 
     updateGLState(camera);
-
-    const Frustum* frustum = camera->getFrustumInModelCoordinates();
-
     _glState->setParent(glState);
 
-    for (size_t i = 0; i < meshesCount; i++) {
-      Mesh* mesh = _meshes[i];
-      const BoundingVolume* boundingVolume = mesh->getBoundingVolume();
-      if ( (boundingVolume != NULL) && boundingVolume->touchesFrustum(frustum) ) {
+    if (_visibilityCulling) {
+      const Frustum* frustum = camera->getFrustumInModelCoordinates();
+
+      for (size_t i = 0; i < meshesCount; i++) {
+        Mesh* mesh = _meshes[i];
+        const BoundingVolume* boundingVolume = mesh->getBoundingVolume();
+        if ( (boundingVolume == NULL) || boundingVolume->touchesFrustum(frustum) ) {
+          mesh->render(rc, _glState);
+        }
+      }
+    }
+    else {
+      for (size_t i = 0; i < meshesCount; i++) {
+        Mesh* mesh = _meshes[i];
         mesh->render(rc, _glState);
       }
     }
@@ -119,7 +138,7 @@ void MeshRenderer::cleanLoadQueue() {
     LoadQueueItem* item = _loadQueue[i];
     delete item;
   }
-  
+
   _loadQueue.clear();
 }
 
@@ -382,9 +401,9 @@ private:
           IFloatBuffer* colors = NULL;
           const JSONArray* jsonColors = jsonObject->getAsArray("colors");
           if (jsonColors == NULL) {
-            const Color fromColor   = Color::red();
-            const Color middleColor = Color::green();
-            const Color toColor     = Color::blue();
+            const Color fromColor   = Color::RED;
+            const Color middleColor = Color::GREEN;
+            const Color toColor     = Color::BLUE;
             FloatBufferBuilderFromColor colorsBuilder;
 
             for (int i = 0; i < size*3; i += 3) {
@@ -420,7 +439,6 @@ private:
                                  _pointSize,
                                  NULL, // flatColor,
                                  colors,
-                                 1,
                                  true);
 
           delete verticesBuilder;
@@ -444,32 +462,32 @@ private:
       }
       else {
         FloatBufferBuilderFromGeodetic* vertices = FloatBufferBuilderFromGeodetic::builderWithFirstVertexAsCenter(_context->getPlanet());
-        
+
         const size_t coordinatesSize = jsonCoordinates->size();
         for (size_t i = 0; i < coordinatesSize; i += 3) {
           const double latInDegrees = jsonCoordinates->getAsNumber(i    , 0);
           const double lonInDegrees = jsonCoordinates->getAsNumber(i + 1, 0);
           const double height       = jsonCoordinates->getAsNumber(i + 2, 0);
-          
+
           vertices->add(Angle::fromDegrees(latInDegrees),
                         Angle::fromDegrees(lonInDegrees),
                         height);
         }
-        
+
         const JSONArray* jsonNormals = jsonObject->getAsArray("normals");
         const size_t normalsSize = jsonNormals->size();
         IFloatBuffer* normals = IFactory::instance()->createFloatBuffer(normalsSize);
         for (size_t i = 0; i < normalsSize; i++) {
           normals->put(i, (float) jsonNormals->getAsNumber(i, 0) );
         }
-        
+
         const JSONArray* jsonIndices = jsonObject->getAsArray("indices");
         const size_t indicesSize = jsonIndices->size();
         IShortBuffer* indices = IFactory::instance()->createShortBuffer(indicesSize);
         for (size_t i = 0; i < indicesSize; i++) {
           indices->put(i, (short) jsonIndices->getAsNumber(i, 0) );
         }
-        
+
         _mesh = new IndexedMesh(GLPrimitive::triangles(),
                                 vertices->getCenter(),
                                 vertices->create(),
@@ -480,13 +498,12 @@ private:
                                 1, // pointSize
                                 _color, // flatColor
                                 NULL, // colors,
-                                1, //  colorsIntensity,
                                 true, // depthTest,
                                 normals
                                 );
-        
+
         delete vertices;
-        
+
         _color = NULL;
       }
     }
@@ -652,7 +669,7 @@ public:
     if (_listener != NULL) {
       _listener->onError(url);
     }
-    
+
     if (_deleteListener) {
       delete _listener;
     }
@@ -725,16 +742,6 @@ void MeshRenderer::disableAll() {
   }
 }
 
-void MeshRenderer::showNormals(bool v) const {
-  _showNormals = v;
-  const size_t meshesCount = _meshes.size();
-  for (size_t i = 0; i < meshesCount; i++) {
-    Mesh* mesh = _meshes[i];
-    mesh->showNormals(v);
-  }
-}
-
 void MeshRenderer::addMesh(Mesh* mesh) {
   _meshes.push_back(mesh);
-  mesh->showNormals(_showNormals);
 }

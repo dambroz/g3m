@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  PlanetRenderContext.cpp
 //  G3MiOSSDK
@@ -24,6 +24,7 @@ package org.glob3.mobile.generated;
 //class TilesRenderParameters;
 //class ITimer;
 //class ElevationDataProvider;
+//class DEMProvider;
 //class TileTessellator;
 //class LayerSet;
 
@@ -35,9 +36,10 @@ public class PlanetRenderContext
   public TileTexturizer _texturizer;
   public ITimer _lastSplitTimer;
   public ElevationDataProvider _elevationDataProvider;
+  public DEMProvider _demProvider;
   public TileTessellator _tessellator;
   public LayerSet _layerSet;
-  public long _tileDownloadPriority;
+  public long _tileTextureDownloadPriority;
   public double _texWidthSquared;
   public double _texHeightSquared;
   public long _nowInMS;
@@ -47,6 +49,11 @@ public class PlanetRenderContext
   public Frustum _frustumInModelCoordinates;
   public LayerTilesRenderParameters _layerTilesRenderParameters;
   public TilesRenderParameters _tilesRenderParameters;
+
+  public final long getTileTextureDownloadPriority(int tileLevel)
+  {
+    return (_tilesRenderParameters._incrementalTileQuality ? _tileTextureDownloadPriority + _layerTilesRenderParameters._maxLevel - tileLevel : _tileTextureDownloadPriority + tileLevel);
+  }
 
   public void dispose()
   {

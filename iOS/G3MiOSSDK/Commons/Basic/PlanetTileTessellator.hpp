@@ -83,7 +83,7 @@ private:
                                const ElevationData* elevationData,
                                float verticalExaggeration,
                                FloatBufferBuilderFromGeodetic* vertices,
-                               TileTessellatorMeshData& data) const;
+                               TileTessellatorMeshData& tileTessellatorMeshData) const;
 
   double createSurface(const Sector& tileSector,
                        const Sector& meshSector,
@@ -94,7 +94,7 @@ private:
                        FloatBufferBuilderFromGeodetic* vertices,
                        ShortBufferBuilder& indices,
                        FloatBufferBuilderFromCartesian2D& textCoords,
-                       TileTessellatorMeshData& data) const;
+                       TileTessellatorMeshData& tileTessellatorMeshData) const;
 
   void createEastSkirt(const Planet* planet,
                        const Sector& tileSector,
@@ -144,12 +144,12 @@ public:
                                  const PlanetRenderContext* prc,
                                  const Tile* tile) const;
 
-
   Mesh* createTileMesh(const G3MRenderContext* rc,
                        const PlanetRenderContext* prc,
                        Tile* tile,
                        const ElevationData* elevationData,
-                       TileTessellatorMeshData& data) const;
+                       const DEMGrid* grid,
+                       TileTessellatorMeshData& tileTessellatorMeshData) const;
 
   Mesh* createTileDebugMesh(const G3MRenderContext* rc,
                             const PlanetRenderContext* prc,
@@ -166,7 +166,7 @@ public:
     if (_renderedSector == NULL || !_renderedSector->isEquals(sector)) {
       delete _renderedSector;
 
-      if (sector.isEquals(Sector::fullSphere())) {
+      if (sector.isEquals(Sector::FULL_SPHERE)) {
         _renderedSector = NULL;
       }
       else {

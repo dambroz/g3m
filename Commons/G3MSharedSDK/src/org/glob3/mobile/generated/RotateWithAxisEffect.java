@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  CameraEffects.cpp
 //  G3MiOSSDK
@@ -17,8 +17,6 @@ package org.glob3.mobile.generated;
 
 
 
-
-//class Angle;
 
 
 

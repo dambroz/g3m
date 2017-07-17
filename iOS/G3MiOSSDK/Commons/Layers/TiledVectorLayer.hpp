@@ -16,9 +16,11 @@
 class TileImageContribution;
 class IDownloader;
 class IBufferDownloadListener;
+class IMathUtils;
 class IStringUtils;
 class GEORasterSymbolizer;
 class TiledVectorLayerTileImageProvider;
+
 
 class TiledVectorLayer : public VectorLayer {
 private:
@@ -61,7 +63,7 @@ private:
   const URL createURL(const Tile* tile) const;
 
 protected:
-  std::string getLayerType() const {
+  const std::string getLayerType() const {
     return "TiledVectorLayer";
   }
 

@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  StackLayoutImageBuilder.cpp
 //  G3MiOSSDK
@@ -105,13 +105,13 @@ public class StackLayoutImageBuilder extends LayoutImageBuilder
 
   public StackLayoutImageBuilder(java.util.ArrayList<IImageBuilder> children)
   {
-     super(children, 0, 0, Color.transparent(), 0, Color.transparent(), 0, 0);
+     super(children, 0, 0, Color.TRANSPARENT, 0, Color.TRANSPARENT, 0, 0);
   
   }
 
   public StackLayoutImageBuilder(IImageBuilder child0, IImageBuilder child1)
   {
-     super(child0, child1, 0, 0, Color.transparent(), 0, Color.transparent(), 0, 0);
+     super(child0, child1, 0, 0, Color.TRANSPARENT, 0, Color.TRANSPARENT, 0, 0);
   
   }
 

@@ -22,6 +22,7 @@ class TileVisibilityTester;
 class LayerSet;
 class VisibleSectorListener;
 class ElevationDataProvider;
+class DEMProvider;
 class Sector;
 class ChangedRendererInfoListener;
 class IImageBuilder;
@@ -41,14 +42,14 @@ private:
   TilesRenderParameters* _parameters;
   bool _showStatistics;
   bool _renderDebug;
-  bool _forceFirstLevelTilesRenderOnStart;
   bool _incrementalTileQuality;
   Quality _quality;
   std::vector<VisibleSectorListener*>* _visibleSectorListeners;
   std::vector<long long>* _stabilizationMilliSeconds;
-  long long _tileDownloadPriority;
+  long long _tileTextureDownloadPriority;
 
-  ElevationDataProvider* _elevationDataProvider;
+  ElevationDataProvider*    _elevationDataProvider;
+  DEMProvider* _demProvider;
   float _verticalExaggeration;
 
   TileTessellator* getTileTessellator();
@@ -58,11 +59,10 @@ private:
   TilesRenderParameters* getParameters();
   bool getShowStatistics();
   bool getRenderDebug();
-  bool getForceFirstLevelTilesRenderOnStart();
   bool getIncrementalTileQuality();
   std::vector<VisibleSectorListener*>* getVisibleSectorListeners();
   std::vector<long long>* getStabilizationMilliSeconds();
-  long long getTileDownloadPriority();
+  long long getTileTextureDownloadPriority();
 
   bool _logTilesPetitions;
 
@@ -70,7 +70,9 @@ private:
   TilesRenderParameters* createPlanetRendererParameters();
   TileTessellator* createTileTessellator();
 
-  ElevationDataProvider* getElevationDataProvider();
+  ElevationDataProvider*    getElevationDataProvider();
+  DEMProvider* getDEMProvider();
+
   float getVerticalExaggeration();
 
   Sector* _renderedSector;
@@ -89,7 +91,7 @@ private:
   
   IImageBuilder* _defaultTileBackgroundImage = NULL;
   
-  IImageBuilder* getDefaultTileBackgroundImageBuilder() const;
+  IImageBuilder* getDefaultTileBackgroundImageBuilder();
   
   TileLODTester* createDefaultTileLODTester() const;
 
@@ -106,16 +108,17 @@ public:
   void setPlanetRendererParameters(TilesRenderParameters* parameters);
   void setShowStatistics(const bool showStatistics);
   void setRenderDebug(const bool renderDebug);
-  void setForceFirstLevelTilesRenderOnStart(const bool forceFirstLevelTilesRenderOnStart);
   void setIncrementalTileQuality(const bool incrementalTileQuality);
   void addVisibleSectorListener(VisibleSectorListener* listener,
                                 const TimeInterval& stabilizationInterval);
   void addVisibleSectorListener(VisibleSectorListener* listener) {
     addVisibleSectorListener(listener, TimeInterval::zero());
   }
-  void setTileDownloadPriority(long long tileDownloadPriority);
+  void setTileTextureDownloadPriority(long long tileTextureDownloadPriority);
 
   void setElevationDataProvider(ElevationDataProvider* elevationDataProvider);
+
+  void setDEMProvider(DEMProvider* demProvider);
 
   void setVerticalExaggeration(float verticalExaggeration);
 

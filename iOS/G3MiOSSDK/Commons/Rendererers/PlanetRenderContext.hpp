@@ -17,6 +17,7 @@ class TileTexturizer;
 class TilesRenderParameters;
 class ITimer;
 class ElevationDataProvider;
+class DEMProvider;
 class TileTessellator;
 class LayerSet;
 
@@ -28,9 +29,10 @@ public:
   TileTexturizer*        _texturizer;
   ITimer*                _lastSplitTimer;
   ElevationDataProvider* _elevationDataProvider;
+  DEMProvider*           _demProvider;
   TileTessellator*       _tessellator;
   LayerSet*              _layerSet;
-  long long              _tileDownloadPriority;
+  long long              _tileTextureDownloadPriority;
   double                 _texWidthSquared;
   double                 _texHeightSquared;
   long long              _nowInMS;
@@ -46,6 +48,8 @@ public:
   LayerTilesRenderParameters* _layerTilesRenderParameters;
   TilesRenderParameters*      _tilesRenderParameters;
 #endif
+
+  const long long getTileTextureDownloadPriority(const int tileLevel) const;
 
   ~PlanetRenderContext() {
   }

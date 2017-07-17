@@ -1,4 +1,28 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
+//
+//  MarksRenderer.cpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 05/06/12.
+//
+
+//
+//  MarksRenderer.hpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 05/06/12.
+//
+
+
+
+//class Mark;
+//class Camera;
+//class MarkTouchListener;
+//class IFloatBuffer;
+//class ITimer;
+//class MarksFilter;
+
+
 public class MarksRenderer extends DefaultRenderer
 {
   private final boolean _readyWhenMarksReady;
@@ -39,10 +63,10 @@ public class MarksRenderer extends DefaultRenderer
     if (_billboardTexCoords == null)
     {
       FloatBufferBuilderFromCartesian2D texCoor = new FloatBufferBuilderFromCartesian2D();
-      texCoor.add(1,1);
-      texCoor.add(1,0);
-      texCoor.add(0,1);
-      texCoor.add(0,0);
+      texCoor.add(1, 1);
+      texCoor.add(1, 0);
+      texCoor.add(0, 1);
+      texCoor.add(0, 0);
       _billboardTexCoords = texCoor.create();
     }
     return _billboardTexCoords;
@@ -148,7 +172,7 @@ public class MarksRenderer extends DefaultRenderer
   
       MutableVector3D cameraPosition = new MutableVector3D();
       camera.getCartesianPositionMutable(cameraPosition);
-      final double cameraHeight = camera.getGeodeticPosition()._height;
+      final double cameraHeight = camera.getGeodeticHeight();
   
       updateGLState(rc);
   

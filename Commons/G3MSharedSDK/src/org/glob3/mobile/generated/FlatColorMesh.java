@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  FlatColorMesh.cpp
 //  G3MiOSSDK
@@ -61,7 +61,7 @@ public class FlatColorMesh extends Mesh
 
     _glState._release();
 
-  super.dispose();
+    super.dispose();
 
   }
 
@@ -75,9 +75,9 @@ public class FlatColorMesh extends Mesh
     return _mesh.getVertexCount();
   }
 
-  public final Vector3D getVertex(int i)
+  public final Vector3D getVertex(int index)
   {
-    return _mesh.getVertex(i);
+    return _mesh.getVertex(index);
   }
 
   public final boolean isTransparent(G3MRenderContext rc)
@@ -91,8 +91,4 @@ public class FlatColorMesh extends Mesh
     _mesh.render(rc, _glState);
   }
 
-  public final void showNormals(boolean v)
-  {
-    _mesh.showNormals(v);
-  }
 }

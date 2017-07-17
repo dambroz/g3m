@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  ShapesRenderer.cpp
 //  G3MiOSSDK
@@ -16,6 +16,8 @@ package org.glob3.mobile.generated;
 //
 
 
+
+//class Camera;
 
 
 public class ShapeDistance

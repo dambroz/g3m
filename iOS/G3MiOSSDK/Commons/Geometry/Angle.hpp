@@ -10,25 +10,14 @@
 
 #define THRESHOLD               1e-5
 
-#include "IMathUtils.hpp"
-
 #include <string>
-
-#define TO_RADIANS(degrees) ((degrees) / 180.0 * 3.14159265358979323846264338327950288)
-#define TO_DEGREES(radians) ((radians) * (180.0 / 3.14159265358979323846264338327950288))
-
 
 class Angle {
 private:
-//  mutable double _sin;
-//  mutable double _cos;
-
   Angle(const double degrees,
         const double radians) :
   _degrees( degrees ),
   _radians( radians )
-//  _sin(2),
-//  _cos(2)
   {
   }
 
@@ -41,37 +30,19 @@ public:
   Angle(const Angle& angle):
   _degrees(angle._degrees),
   _radians(angle._radians)
-//  _sin(angle._sin),
-//  _cos(angle._cos)
   {
-
   }
 
-  static Angle fromDegrees(double degrees) {
-    return Angle(degrees,
-                 TO_RADIANS(degrees));
-  }
+  static Angle fromDegrees(double degrees);
 
   static Angle fromDegreesMinutes(double degrees,
-                                  double minutes) {
-    const IMathUtils* mu = IMathUtils::instance();
-    const double sign = (degrees * minutes) < 0 ? -1.0 : 1.0;
-    const double d = sign * ( mu->abs(degrees) + ( mu->abs(minutes) / 60.0) );
-    return Angle( d, TO_RADIANS(d) );
-  }
+                                  double minutes);
 
   static Angle fromDegreesMinutesSeconds(double degrees,
                                          double minutes,
-                                         double seconds) {
-    const IMathUtils* mu = IMathUtils::instance();
-    const double sign = (degrees * minutes * seconds) < 0 ? -1.0 : 1.0;
-    const double d = sign * ( mu->abs(degrees) + ( mu->abs(minutes) / 60.0) + ( mu->abs(seconds) / 3600.0 ) );
-    return Angle( d, TO_RADIANS(d) );
-  }
+                                         double seconds);
 
-  static Angle fromRadians(double radians) {
-    return Angle(TO_DEGREES(radians), radians);
-  }
+  static Angle fromRadians(double radians);
 
   static Angle min(const Angle& a1,
                    const Angle& a2) {
@@ -90,16 +61,15 @@ public:
   static Angle pi() {
     return Angle::fromDegrees(180);
   }
-  
+
   static Angle halfPi() {
     return Angle::fromDegrees(90);
   }
-  
-  static Angle nan() {
-    return Angle::fromDegrees(NAND);
-  }
 
-  static Angle midAngle(const Angle& angle1, const Angle& angle2) {
+  static Angle nan();
+
+  static Angle midAngle(const Angle& angle1,
+                        const Angle& angle2) {
     return Angle::fromRadians((angle1._radians + angle2._radians) / 2);
   }
 
@@ -125,53 +95,25 @@ public:
     return Angle::fromDegrees( (1.0-alpha) * fromDegrees + alpha * toDegrees );
   }
 
-  bool isNan() const {
-    return ISNAN(_degrees);
-  }
+  static double smoothDegrees(double previousDegrees,
+                              double degrees);
 
-//  double sinus() const {
-////    if (_sin > 1) {
-////      _sin = SIN(_radians);
-////    }
-////    return _sin;
-//    return SIN(_radians);
-//  }
-//
-//  double cosinus() const {
-////    if (_cos > 1) {
-////      _cos = COS(_radians);
-////    }
-////    return _cos;
-//    return COS(_radians);
-//  }
+  static double smoothRadians(double previousRadians,
+                              double radians);
 
-  double tangent() const {
-    return TAN(_radians);
-  }
+  bool isNan() const;
 
-  bool closeTo(const Angle& other) const {
-    return (IMathUtils::instance()->abs(_degrees - other._degrees) < THRESHOLD);
-  }
+  double tangent() const;
 
-  Angle add(const Angle& a) const {
-    const double r = _radians + a._radians;
-    return Angle(TO_DEGREES(r), r);
-  }
+  bool closeTo(const Angle& other) const;
 
-  Angle sub(const Angle& a) const {
-    const double r = _radians - a._radians;
-    return Angle(TO_DEGREES(r), r);
-  }
+  Angle add(const Angle& a) const;
 
-  Angle times(double k) const {
-    const double r = k * _radians;
-    return Angle(TO_DEGREES(r), r);
-  }
+  Angle sub(const Angle& a) const;
 
-  Angle div(double k) const {
-    const double r = _radians / k;
-    return Angle(TO_DEGREES(r), r);
-  }
+  Angle times(double k) const;
+
+  Angle div(double k) const;
 
   double div(const Angle& k) const {
     return _radians / k._radians;
@@ -195,25 +137,13 @@ public:
 
   Angle distanceTo(const Angle& other) const;
 
-  Angle normalized() const {
-    double degrees = _degrees;
-    while (degrees < 0) {
-      degrees += 360;
-    }
-    while (degrees >= 360) {
-      degrees -= 360;
-    }
-    return Angle(degrees, TO_RADIANS(degrees));
-  }
+  Angle normalized() const;
 
   bool isZero() const {
     return (_degrees == 0);
   }
 
-  bool isEquals(const Angle& that) const {
-    const IMathUtils* mu = IMathUtils::instance();
-    return mu->isEquals(_degrees, that._degrees) || mu->isEquals(_radians, that._radians);
-  }
+  bool isEquals(const Angle& that) const;
 
 #ifdef JAVA_CODE
   @Override
@@ -258,7 +188,7 @@ public:
     return description();
   }
 #endif
-
+  
 };
 
 #endif

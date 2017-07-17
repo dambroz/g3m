@@ -1,4 +1,12 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
+//
+//  FloatBufferBuilderFromCartesian3D.cpp
+//  G3MiOSSDK
+//
+//  Created by Diego Gomez Deck on 11/9/16.
+//
+//
+
 //
 //  FloatBufferBuilderFromCartesian3D.hpp
 //  G3MiOSSDK
@@ -30,15 +38,14 @@ public class FloatBufferBuilderFromCartesian3D extends FloatBufferBuilder
   }
 
 
-
   public static FloatBufferBuilderFromCartesian3D builderWithoutCenter()
   {
-    return new FloatBufferBuilderFromCartesian3D(CenterStrategy.NO_CENTER, Vector3D.zero);
+    return new FloatBufferBuilderFromCartesian3D(CenterStrategy.NO_CENTER, Vector3D.ZERO);
   }
 
   public static FloatBufferBuilderFromCartesian3D builderWithFirstVertexAsCenter()
   {
-    return new FloatBufferBuilderFromCartesian3D(CenterStrategy.FIRST_VERTEX, Vector3D.zero);
+    return new FloatBufferBuilderFromCartesian3D(CenterStrategy.FIRST_VERTEX, Vector3D.ZERO);
   }
 
   public static FloatBufferBuilderFromCartesian3D builderWithGivenCenter(Vector3D center)

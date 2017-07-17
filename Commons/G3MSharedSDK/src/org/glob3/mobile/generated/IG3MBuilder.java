@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  IG3MBuilder.cpp
 //  G3MiOSSDK
@@ -43,6 +43,8 @@ package org.glob3.mobile.generated;
 //class MarksRenderer;
 //class ErrorRenderer;
 //class InfoDisplay;
+//class FrustumPolicy;
+//class NearFrustumRenderer;
 
 
 public abstract class IG3MBuilder
@@ -59,6 +61,7 @@ public abstract class IG3MBuilder
   private ProtoRenderer _busyRenderer;
   private ErrorRenderer _errorRenderer;
   private Renderer _hudRenderer;
+  private NearFrustumRenderer _nearFrustumRenderer;
   private java.util.ArrayList<Renderer> _renderers;
   private GInitializationTask _initializationTask;
   private boolean _autoDeleteInitializationTask;
@@ -70,6 +73,8 @@ public abstract class IG3MBuilder
   private SceneLighting _sceneLighting;
   private Sector _shownSector;
   private InfoDisplay _infoDisplay;
+  private boolean _atmosphere;
+  private FrustumPolicy _frustumPolicy;
 
 
   /**
@@ -156,6 +161,10 @@ public abstract class IG3MBuilder
   {
     return _hudRenderer;
   }
+  private NearFrustumRenderer getNearFrustumRenderer()
+  {
+    return _nearFrustumRenderer;
+  }
 
   /**
    * Returns the _backgroundColor. If it does not exist, it will be default initializated.
@@ -166,9 +175,8 @@ public abstract class IG3MBuilder
   {
     if (_backgroundColor == null)
     {
-      _backgroundColor = Color.newFromRGBA((float)0, (float)0.1, (float)0.2, (float)1);
+      _backgroundColor = Color.newFromRGBA(0.0f, 0.1f, 0.2f, 1.0f);
     }
-  
     return _backgroundColor;
   }
 
@@ -265,8 +273,8 @@ public abstract class IG3MBuilder
   private java.util.ArrayList<ICameraConstrainer> createDefaultCameraConstraints()
   {
     java.util.ArrayList<ICameraConstrainer> cameraConstraints = new java.util.ArrayList<ICameraConstrainer>();
-    SimpleCameraConstrainer scc = new SimpleCameraConstrainer();
-    cameraConstraints.add(scc);
+  
+    cameraConstraints.add(SimpleCameraConstrainer.createDefault());
   
     return cameraConstraints;
   }
@@ -298,13 +306,22 @@ public abstract class IG3MBuilder
   {
     if (_shownSector == null)
     {
-      return Sector.fullSphere();
+      return Sector.FULL_SPHERE;
     }
     return _shownSector;
   }
   private InfoDisplay getInfoDisplay()
   {
     return _infoDisplay;
+  }
+
+  private FrustumPolicy getFrustumPolicy()
+  {
+    if (_frustumPolicy == null)
+    {
+      _frustumPolicy = new DynamicFrustumPolicy();
+    }
+    return _frustumPolicy;
   }
 
   private void pvtSetInitializationTask(GInitializationTask initializationTask, boolean autoDeleteInitializationTask)
@@ -377,14 +394,14 @@ public abstract class IG3MBuilder
 //C++ TO JAVA CONVERTER TODO TASK: There is no preprocessor in Java:
 //#warning HUDRenderer doesn't work when this code is uncommented
     InfoDisplay infoDisplay = null;
-  //  InfoDisplay* infoDisplay = getInfoDisplay();
-  //  if (infoDisplay == NULL) {
-  //    Default_HUDRenderer* hud = new Default_HUDRenderer();
-  //
-  //    infoDisplay = new DefaultInfoDisplay(hud);
-  //
-  //    addRenderer(hud);
-  //  }
+    //  InfoDisplay* infoDisplay = getInfoDisplay();
+    //  if (infoDisplay == NULL) {
+    //    Default_HUDRenderer* hud = new Default_HUDRenderer();
+    //
+    //    infoDisplay = new DefaultInfoDisplay(hud);
+    //
+    //    addRenderer(hud);
+    //  }
   
     /*
      * If any renderers were set or added, the main renderer will be a composite renderer.
@@ -395,15 +412,25 @@ public abstract class IG3MBuilder
     Renderer mainRenderer = null;
     if (getRenderers().size() > 0)
     {
-      mainRenderer = new CompositeRenderer();
+      CompositeRenderer composite = new CompositeRenderer();
+  
+      if (_atmosphere)
+      {
+        // has be here, before the PlanetRenderer
+        composite.addRenderer(new AtmosphereRenderer());
+      }
+  
       if (!containsPlanetRenderer(getRenderers()))
       {
-        ((CompositeRenderer) mainRenderer).addRenderer(getPlanetRendererBuilder().create());
+        composite.addRenderer(getPlanetRendererBuilder().create());
       }
+  
       for (int i = 0; i < getRenderers().size(); i++)
       {
-        ((CompositeRenderer) mainRenderer).addRenderer(getRenderers().get(i));
+        composite.addRenderer(getRenderers().get(i));
       }
+  
+      mainRenderer = composite;
     }
     else
     {
@@ -415,7 +442,7 @@ public abstract class IG3MBuilder
   
     InitialCameraPositionProvider icpp = new SimpleInitialCameraPositionProvider();
   
-    G3MWidget g3mWidget = G3MWidget.create(getGL(), getStorage(), getDownloader(), getThreadUtils(), getCameraActivityListener(), getPlanet(), getCameraConstraints(), getCameraRenderer(), mainRenderer, getBusyRenderer(), getErrorRenderer(), getHUDRenderer(), getBackgroundColor(), getLogFPS(), getLogDownloaderStatistics(), getInitializationTask(), getAutoDeleteInitializationTask(), getPeriodicalTasks(), getGPUProgramManager(), getSceneLighting(), icpp, infoDisplay, ViewMode.MONO);
+    G3MWidget g3mWidget = G3MWidget.create(getGL(), getStorage(), getDownloader(), getThreadUtils(), getCameraActivityListener(), getPlanet(), getCameraConstraints(), getCameraRenderer(), mainRenderer, getBusyRenderer(), getErrorRenderer(), getHUDRenderer(), getNearFrustumRenderer(), getBackgroundColor(), getLogFPS(), getLogDownloaderStatistics(), getInitializationTask(), getAutoDeleteInitializationTask(), getPeriodicalTasks(), getGPUProgramManager(), getSceneLighting(), icpp, infoDisplay, ViewMode.MONO, getFrustumPolicy());
   
     g3mWidget.setUserData(getUserData());
   
@@ -436,6 +463,7 @@ public abstract class IG3MBuilder
     _busyRenderer = null;
     _errorRenderer = null;
     _hudRenderer = null;
+    _nearFrustumRenderer = null;
     _initializationTask = null;
     _periodicalTasks = null;
     _periodicalTasks = null;
@@ -444,6 +472,8 @@ public abstract class IG3MBuilder
     if (_shownSector != null)
        _shownSector.dispose();
     _shownSector = null;
+  
+    _frustumPolicy = null;
   
     return g3mWidget;
   }
@@ -468,6 +498,7 @@ public abstract class IG3MBuilder
      _busyRenderer = null;
      _errorRenderer = null;
      _hudRenderer = null;
+     _nearFrustumRenderer = null;
      _renderers = null;
      _initializationTask = null;
      _autoDeleteInitializationTask = true;
@@ -478,6 +509,8 @@ public abstract class IG3MBuilder
      _sceneLighting = null;
      _shownSector = null;
      _infoDisplay = null;
+     _atmosphere = false;
+     _frustumPolicy = null;
   }
 
   public void dispose()
@@ -520,6 +553,8 @@ public abstract class IG3MBuilder
        _errorRenderer.dispose();
     if (_hudRenderer != null)
        _hudRenderer.dispose();
+    if (_nearFrustumRenderer != null)
+       _nearFrustumRenderer.dispose();
     if (_backgroundColor != null)
        _backgroundColor.dispose();
     if (_initializationTask != null)
@@ -539,6 +574,8 @@ public abstract class IG3MBuilder
        _planetRendererBuilder.dispose();
     if (_shownSector != null)
        _shownSector.dispose();
+    if (_frustumPolicy != null)
+       _frustumPolicy.dispose();
   }
 
 
@@ -570,6 +607,12 @@ public abstract class IG3MBuilder
     }
   
     return _threadUtils;
+  }
+
+  public final void setAtmosphere(boolean atmosphere)
+  {
+    _atmosphere = atmosphere;
+    setBackgroundColor(_atmosphere ? Color.newFromRGBA(0, 0, 0, 1) : null);
   }
 
 
@@ -718,21 +761,21 @@ public abstract class IG3MBuilder
    *
    * @param cameraConstraints - std::vector<ICameraConstrainer*>
    */
-  public final void setCameraConstrainsts(java.util.ArrayList<ICameraConstrainer> cameraConstraints)
+  public final void setCameraConstraints(java.util.ArrayList<ICameraConstrainer> cameraConstraints)
   {
-    if (_cameraConstraints != null)
+    if (_cameraConstraints == null)
     {
-      ILogger.instance().logWarning("LOGIC WARNING: camera contraints previously set will be ignored and deleted");
+      _cameraConstraints = new java.util.ArrayList<ICameraConstrainer>();
+    }
+    else
+    {
+      ILogger.instance().logWarning("LOGIC WARNING: camera constraints previously set will be ignored and deleted");
       for (int i = 0; i < _cameraConstraints.size(); i++)
       {
         if (_cameraConstraints.get(i) != null)
            _cameraConstraints.get(i).dispose();
       }
       _cameraConstraints.clear();
-    }
-    else
-    {
-      _cameraConstraints = new java.util.ArrayList<ICameraConstrainer>();
     }
     for (int i = 0; i < cameraConstraints.size(); i++)
     {
@@ -769,17 +812,12 @@ public abstract class IG3MBuilder
    */
   public final void setBackgroundColor(Color backgroundColor)
   {
-    if (_backgroundColor != null)
+    if (backgroundColor != _backgroundColor)
     {
-      ILogger.instance().logError("LOGIC ERROR: backgroundColor already initialized");
-      return;
+      if (_backgroundColor != null)
+         _backgroundColor.dispose();
+      _backgroundColor = backgroundColor;
     }
-    if (backgroundColor == null)
-    {
-      ILogger.instance().logError("LOGIC ERROR: backgroundColor cannot be NULL");
-      return;
-    }
-    _backgroundColor = backgroundColor;
   }
 
 
@@ -831,6 +869,21 @@ public abstract class IG3MBuilder
       return;
     }
     _hudRenderer = hudRenderer;
+  }
+
+  public final void setNearFrustumRenderer(NearFrustumRenderer nearFrustumRenderer)
+  {
+    if (_nearFrustumRenderer != null)
+    {
+      ILogger.instance().logError("LOGIC ERROR: nearFrustumRenderer already initialized");
+      return;
+    }
+    if (nearFrustumRenderer == null)
+    {
+      ILogger.instance().logError("LOGIC ERROR: nearFrustumRenderer cannot be NULL");
+      return;
+    }
+    _nearFrustumRenderer = nearFrustumRenderer;
   }
 
 
@@ -988,6 +1041,16 @@ public abstract class IG3MBuilder
     pvtSetInitializationTask(initializationTask, autoDeleteInitializationTask);
   }
 
+  public final void setFrustumPolicy(FrustumPolicy frustumPolicy)
+  {
+    if (frustumPolicy != _frustumPolicy)
+    {
+      if (_frustumPolicy != null)
+         _frustumPolicy.dispose();
+      _frustumPolicy = frustumPolicy;
+    }
+  }
+
 
   /**
    * Returns the _planet. If it does not exist, it will be default initializated.
@@ -1031,7 +1094,7 @@ public abstract class IG3MBuilder
   {
     if (_sceneLighting == null)
     {
-      _sceneLighting = new CameraFocusSceneLighting(Color.fromRGBA((float)0.5, (float)0.5, (float)0.5, (float)1.0), Color.white());
+      _sceneLighting = new CameraFocusSceneLighting(Color.fromRGBA((float)0.5, (float)0.5, (float)0.5, (float)1.0), Color.WHITE);
     }
     return _sceneLighting;
   }

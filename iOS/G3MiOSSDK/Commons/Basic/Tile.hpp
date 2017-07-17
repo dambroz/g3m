@@ -9,11 +9,15 @@
 #define G3MiOSSDK_Tile
 
 #include <vector>
+
 #include "TileTessellator.hpp"
 #include "Sector.hpp"
+#include "DEMListener.hpp"
 
 class TileTexturizer;
+class Mesh;
 class TileElevationDataRequest;
+class DEMSubscription;
 class GLState;
 class ITexturizerData;
 class PlanetTileTessellatorData;
@@ -21,6 +25,8 @@ class ElevationDataProvider;
 class PlanetRenderer;
 class TileData;
 class TilesStatistics;
+class Geodetic3D;
+class Vector2I;
 
 
 class Tile {
@@ -33,8 +39,7 @@ private:
   Mesh* _debugMesh;
   Mesh* _texturizedMesh;
   TileElevationDataRequest* _elevationDataRequest;
-
-  Mesh* _flatColorMesh;
+  DEMSubscription* _demSubscription;
 
   bool _textureSolved;
   std::vector<Tile*>* _subtiles;
@@ -55,10 +60,10 @@ private:
                    const PlanetRenderContext* prc,
                    const GLState*             glState);
 
-  inline Tile* createSubTile(const Angle& lowerLat, const Angle& lowerLon,
-                             const Angle& upperLat, const Angle& upperLon,
+  inline Tile* createSubTile(const Sector& sector,
                              const int level,
-                             const int row, const int column,
+                             const int row,
+                             const int column,
                              bool setParent);
 
   Tile(const Tile& that);
@@ -73,23 +78,39 @@ private:
   void deleteTexturizedMesh(TileTexturizer* texturizer);
 
   ITexturizerData* _texturizerData;
-  PlanetTileTessellatorData* _tessellatorData;
+  PlanetTileTessellatorData* _planetTileTessellatorData;
 
   int                    _elevationDataLevel;
   ElevationData*         _elevationData;
   bool                   _mustActualizeMeshDueToNewElevationData;
+  DEMGrid*               _grid;
   ElevationDataProvider* _lastElevationDataProvider;
   int _lastTileMeshResolutionX;
   int _lastTileMeshResolutionY;
 
   const PlanetRenderer* _planetRenderer;
 
-  static std::string createTileId(int level,
-                                  int row,
-                                  int column);
+  static const std::string createTileID(int level,
+                                        int row,
+                                        int column);
 
   mutable TileData** _data;
   mutable size_t     _dataSize;
+
+
+
+  class TerrainListener : public DEMListener {
+  private:
+    Tile* _tile;
+  public:
+    TerrainListener(Tile* tile);
+
+    ~TerrainListener();
+
+    void onGrid(DEMGrid* grid);
+
+  };
+
 
 public:
   const Sector      _sector;
@@ -154,11 +175,11 @@ public:
 
   void setTexturizerData(ITexturizerData* texturizerData);
 
-  PlanetTileTessellatorData* getTessellatorData() const {
-    return _tessellatorData;
+  PlanetTileTessellatorData* getPlanetTileTessellatorData() const {
+    return _planetTileTessellatorData;
   }
 
-  void setTessellatorData(PlanetTileTessellatorData* tessellatorData);
+  void setPlanetTileTessellatorData(PlanetTileTessellatorData* tessellatorData);
 
   const Tile* getDeepestTileContaining(const Geodetic3D& position) const;
 
@@ -186,6 +207,8 @@ public:
     return _elevationData;
   }
 
+  void onGrid(DEMGrid* grid);
+
   void setElevationData(ElevationData* ed, int level);
 
   void getElevationDataFromAncestor(const Vector2I& extent);
@@ -201,16 +224,16 @@ public:
                                           const Vector2I& size) const;
 
   TileData* getData(int id) const;
-  
+
   void setData(TileData* data) const;
-  
+
   void clearDataWithID(int id) const;
 
-  const TileTessellatorMeshData* getTessellatorMeshData() const;
+  const TileTessellatorMeshData* getTileTessellatorMeshData() const;
 
   Mesh* getTessellatorMesh(const G3MRenderContext* rc,
                            const PlanetRenderContext* prc);
-
+  
   bool hasSubtiles() const {
     return (_subtiles != NULL);
   }

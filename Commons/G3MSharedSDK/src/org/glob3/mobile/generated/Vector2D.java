@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Vector2D.cpp
 //  G3MiOSSDK
@@ -15,12 +15,12 @@ package org.glob3.mobile.generated;
 
 
 
-
+//class Angle;
 //class MutableVector2D;
+
 
 public class Vector2D
 {
-
 
 //C++ TO JAVA CONVERTER TODO TASK: The implementation of the following method could not be found:
 //  Vector2D operator =(Vector2D v);
@@ -54,7 +54,7 @@ public class Vector2D
 
   public final Angle orientation()
   {
-     return Angle.fromRadians(IMathUtils.instance().atan2(_y, _x));
+    return Angle.fromRadians(IMathUtils.instance().atan2(_y, _x));
   }
 
   public final double squaredLength()
@@ -100,7 +100,7 @@ public class Vector2D
 
   public static Vector2D nan()
   {
-    return new Vector2D(java.lang.Double.NaN, java.lang.Double.NaN);
+    return new Vector2D(Double.NaN, Double.NaN);
   }
 
   public final double maxAxis()
@@ -120,8 +120,6 @@ public class Vector2D
 
   public final boolean isNan()
   {
-//    return IMathUtils::instance()->isNan(_x) || IMathUtils::instance()->isNan(_y);
-
     if (_x != _x)
     {
       return true;
@@ -157,12 +155,10 @@ public class Vector2D
     //u = (p2 - p1) × r1 / (r1 × r2)
     //out = p2 + u x r2
   
-    double u = ((p2.sub(p1)).dot(r1)) / r1.dot(r2);
+    final double u = ((p2.sub(p1)).dot(r1)) / r1.dot(r2);
     Vector2D out = p2.add(r2.times(u));
   
     return out;
-  
-  
   }
 
   public final double dot(Vector2D v)

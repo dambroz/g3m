@@ -9,36 +9,33 @@
 #ifndef __G3MiOSSDK__AbstractMesh__
 #define __G3MiOSSDK__AbstractMesh__
 
-#include "Mesh.hpp"
+#include "TransformableMesh.hpp"
 
-#include "Vector3D.hpp"
-#include "GLState.hpp"
 
-class MutableMatrix44D;
 class IFloatBuffer;
 class Color;
 
-class AbstractMesh : public Mesh {
+
+class AbstractMesh : public TransformableMesh {
+private:
+
 protected:
-  const int               _primitive;
-  const bool              _owner;
-  const Vector3D                _center;
-  const MutableMatrix44D* _translationMatrix;
-  const IFloatBuffer*           _vertices;
-  const Color*            _flatColor;
-  const IFloatBuffer*           _colors;
-  const float             _colorsIntensity;
-  const float             _lineWidth;
-  const float             _pointSize;
-  const bool              _depthTest;
-  const IFloatBuffer*           _normals;
+  const int           _primitive;
+  const bool          _owner;
+  const IFloatBuffer* _vertices;
+  const Color*        _flatColor;
+  const IFloatBuffer* _colors;
+  const float         _lineWidth;
+  const float         _pointSize;
+  const bool          _depthTest;
+  const IFloatBuffer* _normals;
+  const bool          _polygonOffsetFill;
+  const float         _polygonOffsetFactor;
+  const float         _polygonOffsetUnits;
+
 
   mutable BoundingVolume* _boundingVolume;
   BoundingVolume* computeBoundingVolume() const;
-  
-  const bool _polygonOffsetFill;
-  const float _polygonOffsetFactor;
-  const float _polygonOffsetUnits;
 
   AbstractMesh(const int primitive,
                bool owner,
@@ -48,42 +45,33 @@ protected:
                float pointSize,
                const Color* flatColor,
                const IFloatBuffer* colors,
-               const float colorsIntensity,
                bool depthTest,
                const IFloatBuffer* normals,
                bool polygonOffsetFill,
                float polygonOffsetFactor,
                float polygonOffsetUnits);
 
-  virtual void rawRender(const G3MRenderContext* rc) const = 0;
-//  virtual void rawRender(const G3MRenderContext* rc, const GLState* parentGLState) const = 0;
-  
-  GLState* _glState;
-  
-  void createGLState();
+  virtual void renderMesh(const G3MRenderContext* rc,
+                          GLState* glState) const = 0;
 
-  mutable bool _showNormals;
-  mutable Mesh* _normalsMesh;
-  Mesh* createNormalsMesh() const;
+  void userTransformMatrixChanged();
+
+  void initializeGLState(GLState* glState) const;
 
 public:
   ~AbstractMesh();
-  
+
   BoundingVolume* getBoundingVolume() const;
 
   size_t getVertexCount() const;
 
-  const Vector3D getVertex(size_t i) const;
+  const Vector3D getVertex(const size_t index) const;
 
-  bool isTransparent(const G3MRenderContext* rc) const;
-  
+  virtual bool isTransparent(const G3MRenderContext* rc) const;
+
   void rawRender(const G3MRenderContext* rc,
                  const GLState* parentGLState) const;
 
-  void showNormals(bool v) const {
-    _showNormals = v;
-  }
-  
 };
 
 #endif

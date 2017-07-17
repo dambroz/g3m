@@ -57,6 +57,7 @@
 #include "LevelTileCondition.hpp"
 #include "Info.hpp"
 #include "InitialCameraPositionProvider.hpp"
+#include "DynamicFrustumPolicy.hpp"
 
 
 const std::string MapBooOLD_CameraPosition::description() const {
@@ -106,7 +107,7 @@ const std::string MapBooOLD_MultiImage_Level::description() const {
 const std::string MapBooOLD_MultiImage::description() const {
   IStringBuilder* isb = IStringBuilder::newStringBuilder();
   isb->addString("[MultiImage averageColor=");
-  isb->addString(_averageColor.toID());
+  isb->addString(_averageColor.id());
   isb->addString(", _levels=[");
   const size_t levelsSize = _levels.size();
   for (size_t i = 0; i < levelsSize; i++) {
@@ -193,21 +194,21 @@ const std::string MapBooOLD_Scene::description() const {
 
 MapBooOLDBuilder::MapBooOLDBuilder(const URL& serverURL,
                                    const URL& tubesURL,
-                                   const std::string& applicationId,
+                                   const std::string& applicationID,
                                    MapBooOLD_ViewType viewType,
                                    MapBooOLDApplicationChangeListener* applicationListener,
                                    bool enableNotifications,
                                    const std::string& token) :
 _serverURL(serverURL),
 _tubesURL(tubesURL),
-_applicationId(applicationId),
+_applicationID(applicationID),
 _viewType(viewType),
 _applicationName(""),
 _applicationWebsite(""),
 _applicationEMail(""),
 _applicationAbout(""),
 _applicationTimestamp(-1),
-_applicationEventId(-1),
+_applicationEventID(-1),
 _token(token),
 _gl(NULL),
 _g3mWidget(NULL),
@@ -220,8 +221,8 @@ _enableNotifications(enableNotifications),
 _gpuProgramManager(NULL),
 _isApplicationTubeOpen(false),
 _initialParse(true),
-_applicationCurrentSceneId("-1"),
-_lastApplicationCurrentSceneId("-1"),
+_applicationCurrentSceneID("-1"),
+_lastApplicationCurrentSceneID("-1"),
 _context(NULL),
 _webSocket(NULL),
 _marksRenderer(NULL),
@@ -499,28 +500,24 @@ bool MapBooOLDBuilder::onTerrainTouch(const G3MEventContext* ec,
 
 PlanetRenderer* MapBooOLDBuilder::createPlanetRenderer() {
   const bool skirted = true;
-  TileTessellator* tessellator = new PlanetTileTessellator(skirted, Sector::fullSphere());
+  TileTessellator* tessellator = new PlanetTileTessellator(skirted, Sector::FULL_SPHERE);
 
-  ElevationDataProvider* elevationDataProvider = NULL;
   const float verticalExaggeration = 1;
 
   TileTexturizer* texturizer = new DefaultTileTexturizer(new DownloaderImageBuilder(URL("http://www.mapboo.com/web/img/tileNotFound.jpg")));
 
   const bool renderDebug = false;
-  const bool forceFirstLevelTilesRenderOnStart = true;
   const bool incrementalTileQuality = false;
   const Quality quality = QUALITY_LOW;
 
-  const TilesRenderParameters* parameters = new TilesRenderParameters(renderDebug,
-                                                                      forceFirstLevelTilesRenderOnStart,
-                                                                      incrementalTileQuality,
-                                                                      quality);
-
+  TilesRenderParameters* parameters = new TilesRenderParameters(renderDebug,
+                                                                incrementalTileQuality,
+                                                                quality);
 
   const bool showStatistics = false;
-  long long tileDownloadPriority = DownloadPriority::HIGHER;
+  long long tileTextureDownloadPriority = DownloadPriority::HIGHER;
 
-  const Sector renderedSector = Sector::fullSphere();
+  const Sector renderedSector = Sector::FULL_SPHERE;
   const bool renderTileMeshes = true;
 
   const bool logTilesPetitions = false;
@@ -529,15 +526,18 @@ PlanetRenderer* MapBooOLDBuilder::createPlanetRenderer() {
 
   TouchEventType touchEventTypeOfTerrainTouchListener = DownUp;
 
+
+
   PlanetRenderer* result = new PlanetRenderer(tessellator,
-                                              elevationDataProvider,
+                                              NULL, // elevationDataProvider
                                               true,
+                                              NULL, // demProvider
                                               verticalExaggeration,
                                               texturizer,
                                               _layerSet,
                                               parameters,
                                               showStatistics,
-                                              tileDownloadPriority,
+                                              tileTextureDownloadPriority,
                                               renderedSector,
                                               renderTileMeshes,
                                               logTilesPetitions,
@@ -562,7 +562,7 @@ std::vector<ICameraConstrainer*>* MapBooOLDBuilder::createCameraConstraints(cons
   std::vector<ICameraConstrainer*>* cameraConstraints = new std::vector<ICameraConstrainer*>;
   //SimpleCameraConstrainer* scc = new SimpleCameraConstrainer();
 
-  const Geodetic3D initialCameraPosition = planet->getDefaultCameraPosition(Sector::fullSphere());
+  const Geodetic3D initialCameraPosition = planet->getDefaultCameraPosition(Sector::FULL_SPHERE);
 
   cameraConstraints->push_back( new RenderedSectorCameraConstrainer(planetRenderer,
                                                                     initialCameraPosition._height * 1.2) );
@@ -602,7 +602,7 @@ public:
     const IStringUtils* stringUtils = IStringUtils::instance();
     const size_t errorsSize = errors.size();
 
-    const std::string appNotFound = "Invalid request: Application #" + _mbBuilder->getApplicationId() + " not found";
+    const std::string appNotFound = "Invalid request: Application #" + _mbBuilder->getApplicationID() + " not found";
 
     for (size_t i = 0; i < errorsSize; i++) {
       std::string error = errors.at(i);
@@ -826,14 +826,14 @@ Layer* MapBooOLDBuilder::parseLayer(const JSONBaseObject* jsonBaseObjectLayer) c
 
 Color MapBooOLDBuilder::parseColor(const JSONString* jsonColor) const {
   if (jsonColor == NULL) {
-    return Color::black();
+    return Color::BLACK;
   }
 
   const Color* color = Color::parse(jsonColor->value());
   if (color == NULL) {
     ILogger::instance()->logError("Invalid format in attribute 'color' (%s)",
                                   jsonColor->value().c_str());
-    return Color::black();
+    return Color::BLACK;
   }
 
   Color result(*color);
@@ -905,7 +905,7 @@ const MapBooOLD_CameraPosition* MapBooOLDBuilder::parseCameraPosition(const JSON
                                       animated);
 }
 
-//const std::string MapBooOLDBuilder::parseSceneId(const JSONObject* jsonObject) const {
+//const std::string MapBooOLDBuilder::parseSceneID(const JSONObject* jsonObject) const {
 //  if (jsonObject == NULL) {
 //    ILogger::instance()->logError("Missing Scene ID");
 //    return "";
@@ -942,11 +942,11 @@ const Sector MapBooOLDBuilder::parseSector(const JSONObject* jsonObject, const s
   const JSONObject* sector = jsonObject->getAsObject(paramName);
 
   if (sector == NULL) {
-    return Sector::fullSphere();
+    return Sector::FULL_SPHERE;
   }
 
   if (sector->asNull() != NULL) {
-    return Sector::fullSphere();
+    return Sector::FULL_SPHERE;
   }
 
   const double lowerLat = sector->getAsNumber("lowerLat",  -90.0);
@@ -1058,7 +1058,7 @@ void MapBooOLDBuilder::parseApplicationJSON(const JSONObject* jsonObject,
       const int eventId = (int) jsonObject->getAsNumber("eventId", 0);
       const int timestamp = (int) jsonObject->getAsNumber("timestamp", 0);
 
-      if (getApplicationEventId() != eventId) {
+      if (getApplicationEventID() != eventId) {
         const JSONString* jsonName = jsonObject->getAsString("name");
         if (jsonName != NULL) {
           setApplicationName( jsonName->value() );
@@ -1116,23 +1116,23 @@ void MapBooOLDBuilder::parseApplicationJSON(const JSONObject* jsonObject,
           else {
             const JSONObject* jsonDeleteScene = jsonScenes->getAsObject("deleteScene");
             if (jsonDeleteScene != NULL) {
-              const JSONString* jsonSceneId = jsonDeleteScene->getAsString("sceneId");
-              if (jsonSceneId != NULL) {
-                deleteApplicationScene(jsonSceneId->value());
+              const JSONString* jsonSceneID = jsonDeleteScene->getAsString("sceneId");
+              if (jsonSceneID != NULL) {
+                deleteApplicationScene(jsonSceneID->value());
               }
             }
           }
         }
 
-        setApplicationEventId(eventId);
+        setApplicationEventID(eventId);
         setApplicationTimestamp(timestamp);
         saveApplicationData();
         setHasParsedApplication();
       }
 
-      const JSONString* jsonCurrentSceneId = jsonObject->getAsString("currentSceneId");
-      if (jsonCurrentSceneId != NULL) {
-        setApplicationCurrentSceneId( jsonCurrentSceneId->value() );
+      const JSONString* jsonCurrentSceneID = jsonObject->getAsString("currentSceneID");
+      if (jsonCurrentSceneID != NULL) {
+        setApplicationCurrentSceneID( jsonCurrentSceneID->value() );
       }
 
       if (_enableNotifications) {
@@ -1149,9 +1149,9 @@ void MapBooOLDBuilder::parseApplicationJSON(const JSONObject* jsonObject,
 
       if (_initialParse) {
         _initialParse = false;
-        if (_applicationCurrentSceneId.compare("-1") == 0) {
+        if (_applicationCurrentSceneID.compare("-1") == 0) {
           if (_applicationScenes.size() > 0) {
-            setApplicationCurrentSceneId(_applicationScenes.at(0)->getId());
+            setApplicationCurrentSceneID(_applicationScenes.at(0)->getId());
           }
         }
       }
@@ -1260,7 +1260,7 @@ void MapBooOLDBuilder::parseSceneEventAndUpdateScene(const JSONObject* jsonObjec
 
       _applicationScenes[i] = newScene;
 
-      if (sceneID.compare(_applicationCurrentSceneId) == 0) {
+      if (sceneID.compare(_applicationCurrentSceneID) == 0) {
         updateVisibleScene(cameraPositionChaged);
       }
 
@@ -1340,13 +1340,13 @@ void MapBooOLDBuilder::addApplicationNotification(MapBooOLD_Notification* notifi
   delete notification;
 }
 
-void MapBooOLDBuilder::setApplicationCurrentSceneId(const std::string& currentSceneId) {
-  if (_applicationCurrentSceneId.compare(currentSceneId) != 0) {
+void MapBooOLDBuilder::setApplicationCurrentSceneID(const std::string& currentSceneID) {
+  if (_applicationCurrentSceneID.compare(currentSceneID) != 0) {
     const size_t scenesCount = _applicationScenes.size();
     for (size_t i = 0; i < scenesCount; i++) {
       const std::string sceneId = _applicationScenes[i]->getId();
-      if (sceneId.compare(currentSceneId) == 0) {
-        _applicationCurrentSceneId = currentSceneId;
+      if (sceneId.compare(currentSceneID) == 0) {
+        _applicationCurrentSceneID = currentSceneID;
         changedCurrentScene();
 
         break;
@@ -1397,7 +1397,7 @@ const URL MapBooOLDBuilder::createApplicationTubeURL() const {
     view = "runtime";
   }
 
-  return URL(tubesPath + "/application/" + _applicationId + "/" + view, false);
+  return URL(tubesPath + "/application/" + _applicationID + "/" + view, false);
 }
 
 
@@ -1549,11 +1549,11 @@ const URL MapBooOLDBuilder::createApplicationPollURL() const {
   IStringBuilder* isb = IStringBuilder::newStringBuilder();
   isb->addString(_serverURL._path);
   isb->addString("/poll/");
-  isb->addString(_applicationId);
+  isb->addString(_applicationID);
   isb->addString("?view=");
   isb->addString(getViewAsString());
   isb->addString("&eventId=");
-  isb->addInt(_applicationEventId);
+  isb->addInt(_applicationEventID);
   const std::string path = isb->getString();
   delete isb;
 
@@ -1577,17 +1577,17 @@ void MapBooOLDBuilder::openApplicationTube(const G3MContext* context) {
                                         true /* autodeleteWebSocket */);
 }
 
-const std::string MapBooOLDBuilder::getApplicationCurrentSceneId() {
-  return _applicationCurrentSceneId;
+const std::string MapBooOLDBuilder::getApplicationCurrentSceneID() {
+  return _applicationCurrentSceneID;
 }
 
 const MapBooOLD_Scene* MapBooOLDBuilder::getApplicationCurrentScene() {
-  const std::string currentSceneId = getApplicationCurrentSceneId();
+  const std::string currentSceneID = getApplicationCurrentSceneID();
 
   const size_t scenesCount = _applicationScenes.size();
   for (size_t i = 0; i < scenesCount; i++) {
     const std::string sceneId = _applicationScenes[i]->getId();
-    if (sceneId.compare(currentSceneId) == 0) {
+    if (sceneId.compare(currentSceneID) == 0) {
       return _applicationScenes[i];
     }
   }
@@ -1596,7 +1596,7 @@ const MapBooOLD_Scene* MapBooOLDBuilder::getApplicationCurrentScene() {
 
 Color MapBooOLDBuilder::getCurrentBackgroundColor() {
   const MapBooOLD_Scene* scene = getApplicationCurrentScene();
-  return (scene == NULL) ? Color::black() : scene->getBackgroundColor();
+  return (scene == NULL) ? Color::BLACK : scene->getBackgroundColor();
 }
 
 MarksRenderer* MapBooOLDBuilder::getMarksRenderer() {
@@ -1637,6 +1637,9 @@ G3MWidget* MapBooOLDBuilder::create() {
   InitialCameraPositionProvider* icpp = new SimpleInitialCameraPositionProvider();
 
   MapBooOLD_HUDRenderer* hudRenderer = new MapBooOLD_HUDRenderer();
+
+  NearFrustumRenderer* nearFrustumRenderer = NULL;
+
   InfoDisplay* infoDisplay = new MapBooOLD_HUDRendererInfoDisplay(hudRenderer);
   infoDisplay->showDisplay();
 
@@ -1652,7 +1655,8 @@ G3MWidget* MapBooOLDBuilder::create() {
                                  createBusyRenderer(),
                                  createErrorRenderer(),
                                  hudRenderer,
-                                 Color::black(),
+                                 nearFrustumRenderer,
+                                 Color::BLACK,
                                  false,      // logFPS
                                  false,      // logDownloaderStatistics
                                  initializationTask,
@@ -1662,7 +1666,8 @@ G3MWidget* MapBooOLDBuilder::create() {
                                  createSceneLighting(),
                                  icpp,
                                  infoDisplay,
-                                 MONO);
+                                 MONO,
+                                 new DynamicFrustumPolicy());
   delete cameraConstraints;
   delete periodicalTasks;
 
@@ -1670,24 +1675,24 @@ G3MWidget* MapBooOLDBuilder::create() {
 }
 
 
-int MapBooOLDBuilder::getApplicationEventId() const {
-  return _applicationEventId;
+int MapBooOLDBuilder::getApplicationEventID() const {
+  return _applicationEventID;
 }
 
-void MapBooOLDBuilder::setApplicationEventId(const int eventId) {
-  _applicationEventId = eventId;
+void MapBooOLDBuilder::setApplicationEventID(const int eventId) {
+  _applicationEventID = eventId;
 }
 
 int MapBooOLDBuilder::getApplicationTimestamp() const {
   return _applicationTimestamp;
 }
 
-const std::string MapBooOLDBuilder::getApplicationId() {
-  return _applicationId;
+const std::string MapBooOLDBuilder::getApplicationID() {
+  return _applicationID;
 }
 
 void MapBooOLDBuilder::saveApplicationData() const {
-  //  std::string                _applicationId;
+  //  std::string                _applicationID;
   //  std::string                _applicationName;
   //  std::string                _applicationWebsite;
   //  std::string                _applicationEMail;
@@ -1771,18 +1776,18 @@ public:
 };
 
 void MapBooOLDBuilder::rawChangeScene(const std::string& sceneId) {
-  _applicationCurrentSceneId = sceneId;
+  _applicationCurrentSceneID = sceneId;
 
   changedCurrentScene();
 }
 
 void MapBooOLDBuilder::changeScene(const std::string& sceneId) {
-  const std::string currentSceneId = getApplicationCurrentSceneId();
-  if (currentSceneId.compare(sceneId) != 0) {
+  const std::string currentSceneID = getApplicationCurrentSceneID();
+  if (currentSceneID.compare(sceneId) != 0) {
     const size_t scenesCount = _applicationScenes.size();
     for (size_t i = 0; i < scenesCount; i++) {
-      const std::string iSceneId = _applicationScenes[i]->getId();
-      if (sceneId.compare(iSceneId) == 0) {
+      const std::string iSceneID = _applicationScenes[i]->getId();
+      if (sceneId.compare(iSceneID) == 0) {
         getThreadUtils()->invokeInRendererThread(new MapBooOLDBuilder_ChangeSceneTask(this, sceneId),
                                                  true);
         break;
@@ -1843,7 +1848,7 @@ void MapBooOLDBuilder::changedCurrentScene() {
     if (currentScene != NULL) {
       const Sector* sector = currentScene->getSector();
       if (sector == NULL) {
-        _g3mWidget->setRenderedSector( Sector::fullSphere() );
+        _g3mWidget->setRenderedSector( Sector::FULL_SPHERE );
       }
       else {
         _g3mWidget->setRenderedSector( *sector );
@@ -1855,13 +1860,13 @@ void MapBooOLDBuilder::changedCurrentScene() {
 
   if (_applicationListener != NULL) {
     _applicationListener->onCurrentSceneChanged(_context,
-                                                getApplicationCurrentSceneId(),
+                                                getApplicationCurrentSceneID(),
                                                 currentScene);
   }
 
   if (_viewType == VIEW_EDITION_PREVIEW) {
-    if (_applicationCurrentSceneId.compare(_lastApplicationCurrentSceneId) != 0) {
-      if (_lastApplicationCurrentSceneId.compare("-1") != 0) {
+    if (_applicationCurrentSceneID.compare(_lastApplicationCurrentSceneID) != 0) {
+      if (_lastApplicationCurrentSceneID.compare("-1") != 0) {
         if (_webSocket != NULL && _isApplicationTubeOpen) {
           _webSocket->send( getApplicationCurrentSceneCommand() );
         }
@@ -1877,15 +1882,15 @@ void MapBooOLDBuilder::changedCurrentScene() {
           ILogger::instance()->logError("VIEW_PRESENTATION: can't fire the event of changed scene");
         }
       }
-      _lastApplicationCurrentSceneId = _applicationCurrentSceneId;
+      _lastApplicationCurrentSceneID = _applicationCurrentSceneID;
     }
   }
 }
 
 const std::string MapBooOLDBuilder::getApplicationCurrentSceneCommand() const {
   IStringBuilder* isb = IStringBuilder::newStringBuilder();
-  isb->addString("currentSceneId=");
-  isb->addString(_applicationCurrentSceneId);
+  isb->addString("currentSceneID=");
+  isb->addString(_applicationCurrentSceneID);
   const std::string s = isb->getString();
   delete isb;
   return s;
@@ -1895,10 +1900,10 @@ const URL MapBooOLDBuilder::createApplicationCurrentSceneURL() const {
   IStringBuilder* isb = IStringBuilder::newStringBuilder();
   isb->addString(_serverURL._path);
   isb->addString("/REST/1/applications/");
-  isb->addString(_applicationId);
+  isb->addString(_applicationID);
   isb->addString("/_POST_?");
-  isb->addString("currentSceneId=");
-  isb->addString(_applicationCurrentSceneId);
+  isb->addString("currentSceneID=");
+  isb->addString(_applicationCurrentSceneID);
   isb->addString("&token=");
   isb->addString(_token);
   const std::string path = isb->getString();
@@ -1920,7 +1925,7 @@ void MapBooOLDBuilder::updateVisibleScene(const bool cameraPositionChanged) {
     if (currentScene != NULL) {
       const Sector* sector = currentScene->getSector();
       if (sector == NULL) {
-        _g3mWidget->setRenderedSector( Sector::fullSphere() );
+        _g3mWidget->setRenderedSector( Sector::FULL_SPHERE );
       }
       else {
         _g3mWidget->setRenderedSector( *sector );
@@ -1983,8 +1988,8 @@ void MapBooOLDBuilder::deleteApplicationScene(const std::string &sceneId) {
   const int scenesCount = _applicationScenes.size();
   int sceneIndex = -1;
   for (int i = 0; i < scenesCount; i++) {
-    const std::string iSceneId = _applicationScenes[i]->getId();
-    if (iSceneId.compare(sceneId) == 0) {
+    const std::string iSceneID = _applicationScenes[i]->getId();
+    if (iSceneID.compare(sceneId) == 0) {
       sceneIndex = i;
       break;
     }
@@ -2000,8 +2005,8 @@ void MapBooOLDBuilder::deleteApplicationScene(const std::string &sceneId) {
     delete scene;
 
     if (_viewType == VIEW_RUNTIME) {
-      if (_applicationCurrentSceneId.compare(sceneId) == 0) {
-        setApplicationCurrentSceneId(_applicationScenes[0]->getId());
+      if (_applicationCurrentSceneID.compare(sceneId) == 0) {
+        setApplicationCurrentSceneID(_applicationScenes[0]->getId());
       }
     }
 
@@ -2030,7 +2035,7 @@ void MapBooOLDBuilder::setApplicationScenes(const std::vector<MapBooOLD_Scene*>&
 
 SceneLighting* MapBooOLDBuilder::createSceneLighting() {
   return new CameraFocusSceneLighting(Color::fromRGBA((float)0.3, (float)0.3, (float)0.3, (float)1.0),
-                                      Color::yellow());
+                                      Color::YELLOW);
 }
 
 void MapBooOLDBuilder::setApplicationTubeOpened(bool open) {
@@ -2095,7 +2100,7 @@ const URL MapBooOLDBuilder::createGetFeatureInfoRestURL(const Tile* tile,
   isb->addString(_serverURL._path);
 
   isb->addString("/Public/applications/");
-  isb->addString(_applicationId);
+  isb->addString(_applicationID);
   isb->addString("/scenes/");
 
   const MapBooOLD_Scene* scene = getApplicationCurrentScene();
@@ -2178,11 +2183,11 @@ void HUDInfoRenderer_ImageFactory::drawOn(ICanvas* canvas,
                               Left,
                               Bottom,
                               Left,
-                              Color::white(),
+                              Color::WHITE,
                               11,
                               2,
-                              Color::transparent(),
-                              Color::black(),
+                              Color::TRANSPARENT,
+                              Color::BLACK,
                               5);
 }
 

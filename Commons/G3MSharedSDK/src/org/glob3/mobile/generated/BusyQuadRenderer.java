@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  BusyQuadRenderer.cpp
 //  G3MiOSSDK
@@ -18,8 +18,9 @@ package org.glob3.mobile.generated;
 
 
 
-
-//***************************************************************
+//class IImage;
+//class Mesh;
+//class Color;
 
 
 public class BusyQuadRenderer implements ProtoRenderer, EffectTarget
@@ -35,11 +36,11 @@ public class BusyQuadRenderer implements ProtoRenderer, EffectTarget
 
   private boolean initMesh(G3MRenderContext rc)
   {
-    TextureIDReference texId = null;
+    TextureIDReference texID = null;
   
-    texId = rc.getTexturesHandler().getTextureIDReference(_image, GLFormat.rgba(), "BusyQuadRenderer-Texture", false);
+    texID = rc.getTexturesHandler().getTextureIDReference(_image, GLFormat.rgba(), "BusyQuadRenderer-Texture", false);
   
-    if (texId == null)
+    if (texID == null)
     {
       rc.getLogger().logError("Can't upload texture to GPU");
       return false;
@@ -64,7 +65,7 @@ public class BusyQuadRenderer implements ProtoRenderer, EffectTarget
     if (vertices != null)
        vertices.dispose();
   
-    TextureMapping texMap = new SimpleTextureMapping(texId, texCoords.create(), true, false);
+    TextureMapping texMap = new SimpleTextureMapping(texID, texCoords.create(), true, false);
   
     _quadMesh = new TexturedMesh(im, true, texMap, true, true);
   
@@ -140,15 +141,13 @@ public class BusyQuadRenderer implements ProtoRenderer, EffectTarget
 
   public void dispose()
   {
-    //rc->getFactory()->deleteImage(_image);
-    //_image = NULL;
     if (_image != null)
        _image.dispose();
     if (_quadMesh != null)
        _quadMesh.dispose();
     if (_backgroundColor != null)
        _backgroundColor.dispose();
-
+  
     _glState._release();
   }
 

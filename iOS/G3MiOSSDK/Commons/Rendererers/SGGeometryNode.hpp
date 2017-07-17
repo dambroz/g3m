@@ -11,11 +11,9 @@
 
 #include "SGNode.hpp"
 
-#include "GLState.hpp"
-
 class IFloatBuffer;
 class IShortBuffer;
-class GPUProgramState;
+
 
 class SGGeometryNode : public SGNode {
 private:
@@ -26,45 +24,31 @@ private:
   IFloatBuffer* _normals;
   IShortBuffer* _indices;
   const bool    _depthTest;
-  
+
   GLState* _glState;
   void createGLState();
 
 public:
 
   SGGeometryNode(const std::string& id,
-                 const std::string& sId,
+                 const std::string& sID,
                  int                primitive,
                  IFloatBuffer*      vertices,
                  IFloatBuffer*      colors,
                  IFloatBuffer*      uv,
                  IFloatBuffer*      normals,
                  IShortBuffer*      indices,
-                 const bool         depthTest) :
-  SGNode(id, sId),
-  _primitive(primitive),
-  _vertices(vertices),
-  _colors(colors),
-  _uv(uv),
-  _normals(normals),
-  _indices(indices),
-  _depthTest(depthTest),
-  _glState(new GLState())
-  {
-    createGLState();
-  }
+                 const bool         depthTest);
 
   ~SGGeometryNode();
 
-  void rawRender(const G3MRenderContext* rc, const GLState* glState);
-  
-  const GLState* createState(const G3MRenderContext* rc,
-                             const GLState* parentState) {
-    _glState->setParent(parentState);
-    return _glState;
-  }
+  void rawRender(const G3MRenderContext* rc,
+                 const GLState* glState);
 
-  std::string description() {
+  const GLState* createState(const G3MRenderContext* rc,
+                             const GLState* parentState);
+
+  const std::string description() {
     return "SGGeometryNode";
   }
   

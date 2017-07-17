@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Effects.cpp
 //  G3MiOSSDK
@@ -17,9 +17,10 @@ package org.glob3.mobile.generated;
 
 
 
-//class IFactory;
-
 //class G3MRenderContext;
+//class TimeInterval;
+//class ITimer;
+//class IFactory;
 //class G3MContext;
 
 

@@ -24,6 +24,8 @@
 #include "G3MContext.hpp"
 #include "RenderState.hpp"
 #include "Info.hpp"
+#include "IMathUtils.hpp"
+
 
 BingMapsLayer::BingMapsLayer(const std::string&    imagerySet,
                              const std::string&    key,
@@ -184,8 +186,8 @@ void BingMapsLayer::onDowloadMetadata(IByteBuffer* buffer) {
     return;
   }
 
-  const int imageWidth  = (int) meanfulResource->getAsNumber("imageWidth",  256);
-  const int imageHeight = (int) meanfulResource->getAsNumber("imageHeight", 256);
+  const short imageWidth  = (short) meanfulResource->getAsNumber("imageWidth",  256);
+  const short imageHeight = (short) meanfulResource->getAsNumber("imageHeight", 256);
 
   const int zoomMin = (int) meanfulResource->getAsNumber("zoomMin", 1);
   const int zoomMax = (int) meanfulResource->getAsNumber("zoomMax", 1);
@@ -231,8 +233,8 @@ void BingMapsLayer::processMetadata(const std::string& brandLogoUri,
                                     const std::string& copyright,
                                     const std::string& imageUrl,
                                     std::vector<std::string> imageUrlSubdomains,
-                                    const int imageWidth,
-                                    const int imageHeight,
+                                    const short imageWidth,
+                                    const short imageHeight,
                                     const int zoomMin,
                                     const int zoomMax) {
   _brandLogoUri = brandLogoUri;
@@ -245,12 +247,12 @@ void BingMapsLayer::processMetadata(const std::string& brandLogoUri,
 
   const IMathUtils* mu = IMathUtils::instance();
 
-  setParameters(new LayerTilesRenderParameters(Sector::fullSphere(),
+  setParameters(new LayerTilesRenderParameters(Sector::FULL_SPHERE,
                                                1,
                                                1,
                                                mu->max(zoomMin, _initialLevel),
                                                mu->min(zoomMax, _maxLevel),
-                                               Vector2I(imageWidth, imageHeight),
+                                               Vector2S(imageWidth, imageHeight),
                                                LayerTilesRenderParameters::defaultTileMeshResolution(),
                                                true));
 }

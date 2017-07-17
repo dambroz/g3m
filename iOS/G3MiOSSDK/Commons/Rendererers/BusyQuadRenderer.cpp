@@ -15,15 +15,16 @@
 #include "TexturesHandler.hpp"
 #include "SimpleTextureMapping.hpp"
 #include "TexturedMesh.hpp"
-
 #include "FloatBufferBuilderFromCartesian3D.hpp"
 #include "FloatBufferBuilderFromCartesian2D.hpp"
 #include "ShortBufferBuilder.hpp"
-
 #include "GLConstants.hpp"
 #include "GPUProgram.hpp"
 #include "Camera.hpp"
 #include "G3MEventContext.hpp"
+#include "DirectMesh.hpp"
+#include "G3MRenderContext.hpp"
+
 
 
 void BusyQuadRenderer::start(const G3MRenderContext* rc) {
@@ -45,18 +46,18 @@ void BusyQuadRenderer::stop(const G3MRenderContext* rc) {
 
 bool BusyQuadRenderer::initMesh(const G3MRenderContext* rc) {
 #ifdef C_CODE
-  const TextureIDReference* texId = NULL;
+  const TextureIDReference* texID = NULL;
 #endif
 #ifdef JAVA_CODE
-  TextureIDReference texId = null;
+  TextureIDReference texID = null;
 #endif
 
-  texId = rc->getTexturesHandler()->getTextureIDReference(_image,
+  texID = rc->getTexturesHandler()->getTextureIDReference(_image,
                                                           GLFormat::rgba(),
                                                           "BusyQuadRenderer-Texture",
                                                           false);
 
-  if (texId == NULL) {
+  if (texID == NULL) {
     rc->getLogger()->logError("Can't upload texture to GPU");
     return false;
   }
@@ -84,7 +85,7 @@ bool BusyQuadRenderer::initMesh(const G3MRenderContext* rc) {
 
   delete vertices;
 
-  TextureMapping* texMap = new SimpleTextureMapping(texId,
+  TextureMapping* texMap = new SimpleTextureMapping(texID,
                                                     texCoords.create(),
                                                     true,
                                                     false);
@@ -134,4 +135,18 @@ void BusyQuadRenderer::onResizeViewportEvent(const G3MEventContext* ec,
   _projectionMatrix.copyValue(MutableMatrix44D::createOrthographicProjectionMatrix(-halfWidth, halfWidth,
                                                                                    -halfHeight, halfHeight,
                                                                                    -halfWidth, halfWidth));
+}
+
+void BusyQuadRenderer::incDegrees(double value) {
+  _degrees += value;
+  if (_degrees>360) _degrees -= 360;
+  _modelviewMatrix.copyValue(MutableMatrix44D::createRotationMatrix(Angle::fromDegrees(_degrees), Vector3D(0, 0, 1)));
+}
+
+BusyQuadRenderer::~BusyQuadRenderer() {
+  delete _image;
+  delete _quadMesh;
+  delete _backgroundColor;
+
+  _glState->_release();
 }

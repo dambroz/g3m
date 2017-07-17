@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  Vector2S.cpp
 //  G3MiOSSDK
@@ -37,6 +37,11 @@ public class Vector2S
   public final boolean isEquals(Vector2S that)
   {
     return ((_x == that._x) && (_y == that._y));
+  }
+
+  public final double squaredLength()
+  {
+    return _x * _x + _y * _y;
   }
 
 

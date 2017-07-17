@@ -1,15 +1,16 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class Camera
 {
 
-  public Camera(long timestamp)
+  public Camera(long timestamp, FrustumPolicy frustumPolicy)
   {
+     _frustumPolicy = frustumPolicy;
      _planet = null;
      _position = new MutableVector3D(0, 0, 0);
      _center = new MutableVector3D(0, 0, 0);
      _up = new MutableVector3D(0, 0, 1);
      _dirtyFlags = new CameraDirtyFlags();
-     _frustumData = new FrustumData();
+     _frustumData = null;
      _projectionMatrix = new MutableMatrix44D();
      _modelMatrix = new MutableMatrix44D();
      _modelViewMatrix = new MutableMatrix44D();
@@ -21,11 +22,13 @@ public class Camera
      _geodeticPosition = null;
      _angle2Horizon = -99;
      _normalizedPosition = new MutableVector3D(0, 0, 0);
-     _tanHalfVerticalFOV = java.lang.Double.NaN;
-     _tanHalfHorizontalFOV = java.lang.Double.NaN;
+     _tanHalfVerticalFOV = Double.NaN;
+     _tanHalfHorizontalFOV = Double.NaN;
      _timestamp = timestamp;
      _viewPortWidth = -1;
      _viewPortHeight = -1;
+     _fixedZNear = Double.NaN;
+     _fixedZFar = Double.NaN;
     resizeViewport(0, 0);
     _dirtyFlags.setAllDirty();
   }
@@ -42,12 +45,16 @@ public class Camera
        _geodeticCenterOfView.dispose();
     if (_geodeticPosition != null)
        _geodeticPosition.dispose();
+    if (_frustumPolicy != null)
+       _frustumPolicy.dispose();
+    if (_frustumData != null)
+       _frustumData.dispose();
   }
 
   public final void copyFrom(Camera that, boolean ignoreTimestamp)
   {
   
-    if (ignoreTimestamp || _timestamp != that._timestamp)
+    if (ignoreTimestamp || (_timestamp != that._timestamp))
     {
   
       that.forceMatrixCreation();
@@ -67,6 +74,9 @@ public class Camera
       _dirtyFlags.copyFrom(that._dirtyFlags);
   
       _frustumData = that._frustumData;
+  
+      _fixedZNear = that._fixedZNear;
+      _fixedZFar = that._fixedZFar;
   
       _projectionMatrix.copyValue(that._projectionMatrix);
       _modelMatrix.copyValue(that._modelMatrix);
@@ -177,7 +187,7 @@ public class Camera
 
   public final Vector3D getCartesianPosition()
   {
-     return _position.asVector3D();
+    return _position.asVector3D();
   }
   public final void getCartesianPositionMutable(MutableVector3D result)
   {
@@ -186,15 +196,15 @@ public class Camera
 
   public final Vector3D getNormalizedPosition()
   {
-     return _normalizedPosition.asVector3D();
+    return _normalizedPosition.asVector3D();
   }
   public final Vector3D getCenter()
   {
-     return _center.asVector3D();
+    return _center.asVector3D();
   }
   public final Vector3D getUp()
   {
-     return _up.asVector3D();
+    return _up.asVector3D();
   }
   public final void getUpMutable(MutableVector3D result)
   {
@@ -203,17 +213,15 @@ public class Camera
 
   public final Geodetic3D getGeodeticCenterOfView()
   {
-     return _getGeodeticCenterOfView();
+    return _getGeodeticCenterOfView();
   }
   public final Vector3D getXYZCenterOfView()
   {
-     return _getCartesianCenterOfView().asVector3D();
+    return _getCartesianCenterOfView().asVector3D();
   }
   public final Vector3D getViewDirection()
   {
-    // return _center.sub(_position).asVector3D();
-
-    // perform the substraction inlinde to avoid a temporary MutableVector3D instance
+    // perform the subtraction inline to avoid a temporary MutableVector3D instance
     return new Vector3D(_center.x() - _position.x(), _center.y() - _position.y(), _center.z() - _position.z());
   }
 
@@ -227,7 +235,6 @@ public class Camera
   {
     result.set(_center.x() - _position.x(), _center.y() - _position.y(), _center.z() - _position.z());
   }
-
 
   public final void dragCamera(Vector3D p0, Vector3D p1)
   {
@@ -249,14 +256,19 @@ public class Camera
   {
     applyTransform(MutableMatrix44D.createRotationMatrix(delta, axis));
   }
-  public final void moveForward(double d)
+  public final void moveForward(double distance)
   {
     final Vector3D view = getViewDirection().normalized();
-    applyTransform(MutableMatrix44D.createTranslationMatrix(view.times(d)));
+    applyTransform(MutableMatrix44D.createTranslationMatrix(view.times(distance)));
   }
   public final void translateCamera(Vector3D desp)
   {
     applyTransform(MutableMatrix44D.createTranslationMatrix(desp));
+  }
+
+  public final void move(Vector3D direction, double distance)
+  {
+    applyTransform(MutableMatrix44D.createTranslationMatrix(direction.times(distance)));
   }
 
   public final void pivotOnCenter(Angle a)
@@ -343,7 +355,7 @@ public class Camera
       _geodeticPosition = null;
       _dirtyFlags.setAllDirty();
       final double distanceToPlanetCenter = _position.length();
-      final double planetRadius = distanceToPlanetCenter - getGeodeticPosition()._height;
+      final double planetRadius = distanceToPlanetCenter - getGeodeticHeight();
       _angle2Horizon = Math.acos(planetRadius/distanceToPlanetCenter);
       _normalizedPosition.copyFrom(_position);
       _normalizedPosition.normalize();
@@ -383,20 +395,28 @@ public class Camera
     if (_geodeticPosition == null)
     {
       _geodeticPosition = new Geodetic3D(_planet.toGeodetic3D(getCartesianPosition()));
+      if (_geodeticPosition.isNan())
+      {
+        throw new RuntimeException("Camera logic error, invalid _geodeticPosition");
+      }
     }
     return _geodeticPosition;
+  }
+  public final double getGeodeticHeight()
+  {
+    return getGeodeticPosition()._height;
   }
 
   public final void setGeodeticPosition(Geodetic3D g3d)
   {
-    final Angle heading = getHeading();
-    final Angle pitch = getPitch();
+    final TaitBryanAngles angles = getHeadingPitchRoll();
     setPitch(Angle.fromDegrees(-90));
-    MutableMatrix44D dragMatrix = _planet.drag(getGeodeticPosition(), g3d);
+    final MutableMatrix44D dragMatrix = _planet.drag(getGeodeticPosition(), g3d);
     if (dragMatrix.isValid())
-       applyTransform(dragMatrix);
-    setHeading(heading);
-    setPitch(pitch);
+    {
+      applyTransform(dragMatrix);
+    }
+    setHeadingPitchRoll(angles._heading, angles._pitch, angles._roll);
   }
 
   public final void setGeodeticPositionStablePitch(Geodetic3D g3d)
@@ -476,7 +496,7 @@ public class Camera
   {
     // this implementation is not right exact, but it's faster.
     final double z = sphere._center.distanceTo(getCartesianPosition());
-    final double rWorld = sphere._radius * _frustumData._znear / z;
+    final double rWorld = sphere._radius * _frustumData._zNear / z;
     final double rScreen = rWorld * _viewPortHeight / (_frustumData._top - _frustumData._bottom);
     return DefineConstants.PI * rScreen * rScreen;
   }
@@ -485,9 +505,7 @@ public class Camera
   {
     setCartesianPosition(_position.transformedBy(M, 1.0));
     setCenter(_center.transformedBy(M, 1.0));
-  
     setUp(_up.transformedBy(M, 0.0));
-  
     //_dirtyFlags.setAllDirty();
   }
 
@@ -542,7 +560,7 @@ public class Camera
   }
   public final CoordinateSystem getCameraCoordinateSystem()
   {
-    return new CoordinateSystem(getViewDirection(), getUp(), getCartesianPosition());
+    return CoordinateSystem.fromCamera(this);
   }
   public final TaitBryanAngles getHeadingPitchRoll()
   {
@@ -563,7 +581,7 @@ public class Camera
     _ray1.putSub(_position, point1);
     final double angleInRadians = MutableVector3D.angleInRadiansBetween(_ray1, _ray0);
     final FrustumData frustumData = getFrustumData();
-    final double distanceInMeters = frustumData._znear * IMathUtils.instance().tan(angleInRadians/2);
+    final double distanceInMeters = frustumData._zNear * IMathUtils.instance().tan(angleInRadians/2);
     return distanceInMeters * _viewPortHeight / frustumData._top;
   }
 
@@ -644,6 +662,55 @@ public class Camera
     _dirtyFlags.setAllDirty();
   }
 
+  public final void getVerticesOfZNearPlane(IFloatBuffer vertices)
+  {
+    final Plane zNearPlane = getFrustumInModelCoordinates().getNearPlane();
+  
+    final Vector3D pos = getCartesianPosition();
+    final Vector3D vd = getViewDirection();
+  
+    final Vector3D c = zNearPlane.intersectionWithRay(pos, vd);
+    final Vector3D up = getUp().normalized().times(getFrustumData()._top * 2.0);
+    final Vector3D right = vd.cross(up).normalized().times(getFrustumData()._right * 2.0);
+  
+    vertices.putVector3D(0, c.sub(up).sub(right));
+    vertices.putVector3D(1, c.add(up).sub(right));
+    vertices.putVector3D(2, c.sub(up).add(right));
+    vertices.putVector3D(3, c.add(right).add(up));
+  }
+
+  public final FrustumData getFrustumData()
+  {
+    if (_dirtyFlags._frustumDataDirty)
+    {
+      _dirtyFlags._frustumDataDirty = false;
+      if (_frustumData != null)
+         _frustumData.dispose();
+      _frustumData = calculateFrustumData();
+    }
+    return _frustumData;
+  }
+
+  public final Planet getPlanet()
+  {
+    return _planet;
+  }
+
+  public final void setFixedFrustum(double zNear, double zFar)
+  {
+    _timestamp++;
+    _fixedZNear = zNear;
+    _fixedZFar = zFar;
+    _dirtyFlags.setAllDirty();
+  }
+
+  public final void resetFrustumPolicy()
+  {
+    _timestamp++;
+    _fixedZNear = Double.NaN;
+    _fixedZFar = Double.NaN;
+    _dirtyFlags.setAllDirty();
+  }
 
 
 //C++ TO JAVA CONVERTER TODO TASK: The implementation of the following method could not be found:
@@ -675,12 +742,13 @@ public class Camera
   //  {
   //  }
 
+  private final FrustumPolicy _frustumPolicy;
+
   private long _timestamp;
 
   private MutableVector3D _ray0 = new MutableVector3D();
   private MutableVector3D _ray1 = new MutableVector3D();
 
-  //  const Angle getHeading(const Vector3D& normal) const;
 
   //IF A NEW ATTRIBUTE IS ADDED CHECK CONSTRUCTORS AND RESET() !!!!
   private int _viewPortWidth;
@@ -699,7 +767,7 @@ public class Camera
   private MutableVector3D _normalizedPosition = new MutableVector3D();
 
   private CameraDirtyFlags _dirtyFlags = new CameraDirtyFlags();
-  private FrustumData _frustumData = new FrustumData();
+  private FrustumData _frustumData;
   private MutableMatrix44D _projectionMatrix = new MutableMatrix44D();
   private MutableMatrix44D _modelMatrix = new MutableMatrix44D();
   private MutableMatrix44D _modelViewMatrix = new MutableMatrix44D();
@@ -709,6 +777,9 @@ public class Camera
   private Frustum _frustumInModelCoordinates;
   private double _tanHalfVerticalFOV;
   private double _tanHalfHorizontalFOV;
+
+  private double _fixedZNear;
+  private double _fixedZFar;
 
   //The Camera Effect Target
   private static class CameraEffectTarget implements EffectTarget
@@ -745,24 +816,12 @@ public class Camera
     }
   }
 
-  // data to compute frustum
-  private FrustumData getFrustumData()
-  {
-    if (_dirtyFlags._frustumDataDirty)
-    {
-      _dirtyFlags._frustumDataDirty = false;
-      _frustumData = calculateFrustumData();
-    }
-    return _frustumData;
-  }
-
   // intersection of view direction with globe in(x,y,z)
   private MutableVector3D _getCartesianCenterOfView()
   {
     if (_dirtyFlags._cartesianCenterOfViewDirty)
     {
       _dirtyFlags._cartesianCenterOfViewDirty = false;
-      //      _cartesianCenterOfView = centerOfViewOnPlanet().asMutableVector3D();
       _cartesianCenterOfView.copyFrom(centerOfViewOnPlanet());
     }
     return _cartesianCenterOfView;
@@ -796,18 +855,25 @@ public class Camera
 
   private FrustumData calculateFrustumData()
   {
-    final double height = getGeodeticPosition()._height;
-    double zNear = height * 0.1;
+    double zNear;
+    double zFar;
   
-    double zFar = _planet.distanceToHorizon(_position.asVector3D());
-  
-    final double goalRatio = 1000;
-    final double ratio = zFar / zNear;
-    if (ratio < goalRatio)
+    if ((_fixedZNear != _fixedZNear) || (_fixedZFar != _fixedZFar))
     {
-      zNear = zFar / goalRatio;
+      final Vector2D zNearAndZFar = _frustumPolicy.calculateFrustumZNearAndZFar(this);
+      zNear = (_fixedZNear != _fixedZNear) ? zNearAndZFar._x : _fixedZNear;
+      zFar = (_fixedZFar != _fixedZFar) ? zNearAndZFar._y : _fixedZFar;
+    }
+    else
+    {
+      zNear = _fixedZNear;
+      zFar = _fixedZFar;
     }
   
+    return calculateFrustumData(zNear, zFar);
+  }
+  private FrustumData calculateFrustumData(double zNear, double zFar)
+  {
     if ((_tanHalfHorizontalFOV != _tanHalfHorizontalFOV) || (_tanHalfVerticalFOV != _tanHalfVerticalFOV))
     {
       final double ratioScreen = (double) _viewPortHeight / _viewPortWidth;
@@ -866,7 +932,6 @@ public class Camera
     if (_dirtyFlags._modelViewMatrixDirty)
     {
       _dirtyFlags._modelViewMatrixDirty = false;
-      //_modelViewMatrix.copyValue(getProjectionMatrix().multiply(getModelMatrix()));
       _modelViewMatrix.copyValueOfMultiplication(getProjectionMatrix(), getModelMatrix());
     }
     return _modelViewMatrix;

@@ -19,6 +19,8 @@
 #include "GPUProgramManager.hpp"
 #include "Vector2F.hpp"
 #include "G3MEventContext.hpp"
+#include "MarksFilter.hpp"
+#include "G3MRenderContext.hpp"
 
 
 void MarksRenderer::setMarkTouchListener(MarkTouchListener* markTouchListener,
@@ -231,7 +233,7 @@ void MarksRenderer::render(const G3MRenderContext* rc, GLState* glState) {
 
     MutableVector3D cameraPosition;
     camera->getCartesianPositionMutable(cameraPosition);
-    const double cameraHeight = camera->getGeodeticPosition()._height;
+    const double cameraHeight = camera->getGeodeticHeight();
 
     updateGLState(rc);
 

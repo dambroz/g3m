@@ -10,22 +10,29 @@
 #define __G3MiOSSDK__ShapesRenderer__
 
 #include "DefaultRenderer.hpp"
-#include "Shape.hpp"
 #include <vector>
-#include "DownloadPriority.hpp"
 #include "URL.hpp"
+#include "Shape.hpp"
+#include "DownloadPriority.hpp"
 #include "MutableVector3D.hpp"
+#include "TimeInterval.hpp"
+
+class Camera;
 
 
-struct ShapeDistance {
+class ShapeDistance {
+public:
   double _distance;
   Shape* _shape;
 
-  ShapeDistance(double distance, Shape* shape):
+  ShapeDistance(double distance,
+                Shape* shape):
   _distance(distance),
   _shape(shape)
-  {}
+  {
+  }
 };
+
 
 class SGShape;
 
@@ -138,30 +145,9 @@ private:
 
 public:
 
-  ShapesRenderer(bool renderNotReadyShapes=true) :
-  _renderNotReadyShapes(renderNotReadyShapes),
-  _glState(new GLState()),
-  _glStateTransparent(new GLState()),
-  _lastCamera(NULL)
-  {
-    _context = NULL;
-  }
+  ShapesRenderer(bool renderNotReadyShapes=true);
 
-  ~ShapesRenderer() {
-    const size_t shapesCount = _shapes.size();
-    for (size_t i = 0; i < shapesCount; i++) {
-      Shape* shape = _shapes[i];
-      delete shape;
-    }
-
-    _glState->_release();
-    _glStateTransparent->_release();
-
-#ifdef JAVA_CODE
-    super.dispose();
-#endif
-
-  }
+  ~ShapesRenderer();
 
   void addShape(Shape* shape) {
     _shapes.push_back(shape);

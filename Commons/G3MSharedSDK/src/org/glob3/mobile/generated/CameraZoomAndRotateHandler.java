@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  CameraZoomAndRotateHandler.cpp
 //  G3MiOSSDK
@@ -6,7 +6,6 @@ package org.glob3.mobile.generated;
 //  Created by Agustin Trujillo on 26/06/13.
 //
 //
-
 
 //
 //  CameraZoomAndRotateHandler.hpp
@@ -19,6 +18,10 @@ package org.glob3.mobile.generated;
 
 
 
+
+//class Camera;
+
+
 public class CameraZoomAndRotateHandler extends CameraEventHandler
 {
   private double _fingerSep0;
@@ -27,6 +30,13 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
 
   private MutableVector3D _centralGlobePoint = new MutableVector3D();
   private MutableVector3D _centralGlobeNormal = new MutableVector3D();
+
+  private MutableVector2F _initialPixel0 = new MutableVector2F(); //Initial pixels at start of gesture
+  private MutableVector2F _initialPixel1 = new MutableVector2F();
+
+  private MutableVector3D _cameraPosition = new MutableVector3D();
+  private MutableVector3D _cameraCenter = new MutableVector3D();
+  private MutableVector3D _cameraUp = new MutableVector3D();
 
   private void zoom(Camera camera, Vector2F difCurrentPixels)
   {
@@ -83,10 +93,13 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
 
   public void dispose()
   {
-  super.dispose();
-
+    super.dispose();
   }
 
+  public final RenderState getRenderState(G3MRenderContext rc)
+  {
+    return RenderState.ready();
+  }
 
   public final boolean onTouchEvent(G3MEventContext eventContext, TouchEvent touchEvent, CameraContext cameraContext)
   {
@@ -156,7 +169,7 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
   {
     Camera camera = cameraContext.getNextCamera();
     camera.getLookAtParamsInto(_cameraPosition, _cameraCenter, _cameraUp);
-    cameraContext.setCurrentGesture(Gesture.DoubleDrag);
+    cameraContext.setCurrentGesture(CameraEventGesture.DoubleDrag);
   
     // double dragging
     _initialPixel0 = new MutableVector2F(touchEvent.getTouch(0).getPos());
@@ -171,14 +184,14 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
     final Planet planet = eventContext.getPlanet();
   
     // if it is the first move, let's decide if make zoom or rotate
-    if (cameraContext.getCurrentGesture() == Gesture.DoubleDrag)
+    if (cameraContext.getCurrentGesture() == CameraEventGesture.DoubleDrag)
     {
       Vector2F difPixel0 = pixel0.sub(_initialPixel0.asVector2F());
       Vector2F difPixel1 = pixel1.sub(_initialPixel1.asVector2F());
       if ((difPixel0._y<-1 && difPixel1._y>1) || (difPixel0._y>1 && difPixel1._y<-1) || (difPixel0._x<-1 && difPixel1._x>1) || (difPixel0._x>1 && difPixel1._x<-1))
       {
         //printf ("zoom..\n");
-        cameraContext.setCurrentGesture(Gesture.Zoom);
+        cameraContext.setCurrentGesture(CameraEventGesture.Zoom);
       }
   
       // test if starting a zoom action
@@ -195,7 +208,7 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
           _centralGlobeNormal.copyFrom(planet.geodeticSurfaceNormal(_centralGlobePoint));
           _fingerSep0 = Math.sqrt((difCurrentPixels._x *difCurrentPixels._x+difCurrentPixels._y *difCurrentPixels._y));
           _lastAngle = _angle0 = Math.atan2(difCurrentPixels._y, difCurrentPixels._x);
-          cameraContext.setCurrentGesture(Gesture.Zoom);
+          cameraContext.setCurrentGesture(CameraEventGesture.Zoom);
         }
         else
           ILogger.instance().logInfo("Zoom is no possible. View direction does not intersect the globe");
@@ -226,20 +239,10 @@ public class CameraZoomAndRotateHandler extends CameraEventHandler
   }
   public final void onUp(G3MEventContext eventContext, TouchEvent touchEvent, CameraContext cameraContext)
   {
-    cameraContext.setCurrentGesture(Gesture.None);
+    cameraContext.setCurrentGesture(CameraEventGesture.None);
     //_initialPixel0 = _initialPixel1 = Vector2I(-1,-1);
   
     //printf ("end 2 fingers.  gesture=%d\n", _currentGesture);
   }
-
-  public MutableVector2F _initialPixel0 = new MutableVector2F(); //Initial pixels at start of gesture
-  public MutableVector2F _initialPixel1 = new MutableVector2F();
-
-  public double _initialFingerSeparation;
-  public double _initialFingerInclination;
-
-  public MutableVector3D _cameraPosition = new MutableVector3D();
-  public MutableVector3D _cameraCenter = new MutableVector3D();
-  public MutableVector3D _cameraUp = new MutableVector3D();
 
 }

@@ -44,6 +44,8 @@
 #include "G3MVectorStreaming1DemoScene.hpp"
 #include "G3MVectorStreaming2DemoScene.hpp"
 #include "G3MStereoDemoScene.hpp"
+#include "G3M3DLandDemoScene.hpp"
+
 
 G3MDemoModel::G3MDemoModel(G3MDemoListener*             listener,
                            LayerSet*                    layerSet,
@@ -89,6 +91,8 @@ _context(NULL)
   _scenes.push_back( new G3MVectorStreaming1DemoScene(this) );
   _scenes.push_back( new G3MVectorStreaming2DemoScene(this) );
   _scenes.push_back( new G3MStereoDemoScene(this) );
+
+  _scenes.push_back( new G3M3DLandDemoScene(this) );
 }
 
 void G3MDemoModel::initializeG3MContext(const G3MContext* context) {
@@ -108,33 +112,30 @@ void G3MDemoModel::initializeG3MWidget(G3MWidget* g3mWidget) {
 }
 
 void G3MDemoModel::reset() {
-  _g3mWidget->setViewMode(MONO);
+  getG3MWidget()->setViewMode(MONO);
+  getG3MWidget()->cancelAllEffects();
+  getG3MWidget()->setBackgroundColor( Color::fromRGBA(0.0f, 0.1f, 0.2f, 1.0f) );
+  getG3MWidget()->setRenderedSector( Sector::fullSphere() );
+  getG3MWidget()->removeAllPeriodicalTasks();
 
-  _g3mWidget->cancelAllEffects();
+  getLayerSet()->removeAllLayers(true);
 
   PlanetRenderer* planetRenderer = getPlanetRenderer();
+  planetRenderer->setShowStatistics(false);
+  planetRenderer->setIncrementalTileQuality(false);
+  // reset DEM
   planetRenderer->setVerticalExaggeration(1);
-
-  ElevationDataProvider* elevationDataProvider = NULL;
-  planetRenderer->setElevationDataProvider(elevationDataProvider, true);
-
-  _g3mWidget->setBackgroundColor( Color::fromRGBA(0.0f, 0.1f, 0.2f, 1.0f) );
-
-  _g3mWidget->setRenderedSector( Sector::fullSphere() );
-
-  getG3MWidget()->removeAllPeriodicalTasks();
+  planetRenderer->setElevationDataProvider(NULL, true);
+  planetRenderer->setDEMProvider(NULL);
 
   getMarksRenderer()->removeAllMarks();
   getMarksRenderer()->setRenderInReverse(false);
-
   getMeshRenderer()->clearMeshes();
   getShapesRenderer()->removeAllShapes(true);
   getPointCloudsRenderer()->removeAllPointClouds();
   getHUDRenderer()->removeAllWidgets();
-
   getNonOverlappingMarksRenderer()->removeAllMarks();
   getNonOverlappingMarksRenderer()->removeAllListeners();
-
   getVectorStreamingRenderer()->removeAllVectorSets();
 
   _layerSet->removeAllLayers(true);

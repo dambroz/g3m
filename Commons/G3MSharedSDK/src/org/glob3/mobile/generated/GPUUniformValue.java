@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  GPUUniform.cpp
 //  G3MiOSSDK
@@ -40,6 +40,7 @@ public abstract class GPUUniformValue extends RCObject
   public abstract boolean isEquals(GPUUniformValue v);
 
   public abstract String description();
+
   @Override
   public String toString() {
     return description();

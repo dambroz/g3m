@@ -1,10 +1,7 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class NonOverlappingMark
 {
   private float _springLengthInPixels;
-
-//  MutableVector2F _widgetScreenPosition;
-//  MutableVector2F _anchorScreenPosition;
 
   private Vector3D _cartesianPos;
   private Geodetic3D _geoPosition ;
@@ -192,7 +189,7 @@ public class NonOverlappingMark
     {
       _springGLState = new GLState();
   
-      _springGLState.addGLFeature(new FlatColorGLFeature(Color.black()), false);
+      _springGLState.addGLFeature(new FlatColorGLFeature(Color.BLACK), false);
   
       _springVertices = rc.getFactory().createFloatBuffer(2 * 2);
       _springVertices.rawPut(0, sp._x);
@@ -300,7 +297,6 @@ public class NonOverlappingMark
   public final void resetWidgetPositionVelocityAndForce()
   {
     _widget.resetPosition();
-//    _widgetScreenPosition.put(NANF, NANF);
     _speed.set(0, 0);
     _force.set(0, 0);
   }

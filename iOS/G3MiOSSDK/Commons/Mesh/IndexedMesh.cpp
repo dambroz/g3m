@@ -10,18 +10,8 @@
 #include "IndexedMesh.hpp"
 #include "GL.hpp"
 #include "IShortBuffer.hpp"
+#include "G3MRenderContext.hpp"
 
-
-IndexedMesh::~IndexedMesh() {
-  if (_ownsIndices) {
-    delete _indices;
-  }
-
-#ifdef JAVA_CODE
-  super.dispose();
-#endif
-
-}
 
 IndexedMesh::IndexedMesh(const int primitive,
                          const Vector3D& center,
@@ -33,7 +23,6 @@ IndexedMesh::IndexedMesh(const int primitive,
                          float pointSize,
                          const Color* flatColor,
                          IFloatBuffer* colors,
-                         const float colorsIntensity,
                          bool depthTest,
                          IFloatBuffer* normals,
                          bool polygonOffsetFill,
@@ -47,7 +36,6 @@ AbstractMesh(primitive,
              pointSize,
              flatColor,
              colors,
-             colorsIntensity,
              depthTest,
              normals,
              polygonOffsetFill,
@@ -59,7 +47,21 @@ _ownsIndices(ownsIndices)
 
 }
 
-void IndexedMesh::rawRender(const G3MRenderContext* rc) const {
+IndexedMesh::~IndexedMesh() {
+  if (_ownsIndices) {
+    delete _indices;
+  }
+
+#ifdef JAVA_CODE
+  super.dispose();
+#endif
+}
+
+void IndexedMesh::renderMesh(const G3MRenderContext* rc,
+                             GLState* glState) const {
   GL* gl = rc->getGL();
-  gl->drawElements(_primitive, _indices, _glState, *rc->getGPUProgramManager());
+  gl->drawElements(_primitive,
+                   _indices,
+                   glState,
+                   *rc->getGPUProgramManager());
 }

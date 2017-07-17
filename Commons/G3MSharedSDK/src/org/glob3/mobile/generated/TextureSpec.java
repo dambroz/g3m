@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  TexturesHandler.cpp
 //  G3MiOSSDK
@@ -21,7 +21,7 @@ package org.glob3.mobile.generated;
 //class TextureHolder;
 //class GL;
 //class IFactory;
-//class IGLTextureId;
+//class IGLTextureID;
 //class TextureIDReference;
 
 public class TextureSpec

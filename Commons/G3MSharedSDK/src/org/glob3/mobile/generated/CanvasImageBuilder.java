@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  CanvasImageBuilder.cpp
 //  G3MiOSSDK
@@ -40,7 +40,7 @@ public abstract class CanvasImageBuilder extends AbstractImageBuilder
     }
     else
     {
-      _canvas.setFillColor(Color.transparent());
+      _canvas.setFillColor(Color.TRANSPARENT);
       _canvas.fillRectangle(0, 0, _width, _height);
     }
   

@@ -7,31 +7,33 @@
 
 #include "Frustum.hpp"
 #include "Box.hpp"
+#include "BoundingVolume.hpp"
+#include "FrustumData.hpp"
 
 
-Frustum::Frustum (const FrustumData& data):
-_ltn(Vector3D(data._left, data._top, -data._znear)),
-_rtn(Vector3D(data._right, data._top, -data._znear)),
-_lbn(Vector3D(data._left, data._bottom, -data._znear)),
-_rbn(Vector3D(data._right, data._bottom, -data._znear)),
-_ltf(Vector3D(data._zfar/data._znear*data._left,  data._zfar/data._znear*data._top,     -data._zfar)),
-_rtf(Vector3D(data._zfar/data._znear*data._right, data._zfar/data._znear*data._top,     -data._zfar)),
-_lbf(Vector3D(data._zfar/data._znear*data._left,  data._zfar/data._znear*data._bottom,  -data._zfar)),
-_rbf(Vector3D(data._zfar/data._znear*data._right, data._zfar/data._znear*data._bottom,  -data._zfar)),
-_leftPlane(Plane::fromPoints(Vector3D::zero,
-                             Vector3D(data._left, data._top, -data._znear),
-                             Vector3D(data._left, data._bottom, -data._znear))),
-_bottomPlane(Plane::fromPoints(Vector3D::zero,
-                               Vector3D(data._left, data._bottom, -data._znear),
-                               Vector3D(data._right, data._bottom, -data._znear))),
-_rightPlane(Plane::fromPoints(Vector3D::zero,
-                              Vector3D(data._right, data._bottom, -data._znear),
-                              Vector3D(data._right, data._top, -data._znear))),
-_topPlane(Plane::fromPoints(Vector3D::zero,
-                            Vector3D(data._right, data._top, -data._znear),
-                            Vector3D(data._left, data._top, -data._znear))),
-_nearPlane(Plane(Vector3D(0, 0, 1), data._znear)),
-_farPlane(Plane(Vector3D(0, 0, -1), -data._zfar)),
+Frustum::Frustum(const FrustumData* data):
+_ltn(Vector3D(data->_left,  data->_top,    -data->_zNear)),
+_rtn(Vector3D(data->_right, data->_top,    -data->_zNear)),
+_lbn(Vector3D(data->_left,  data->_bottom, -data->_zNear)),
+_rbn(Vector3D(data->_right, data->_bottom, -data->_zNear)),
+_ltf(Vector3D(data->_zFar/data->_zNear*data->_left,  data->_zFar/data->_zNear*data->_top,     -data->_zFar)),
+_rtf(Vector3D(data->_zFar/data->_zNear*data->_right, data->_zFar/data->_zNear*data->_top,     -data->_zFar)),
+_lbf(Vector3D(data->_zFar/data->_zNear*data->_left,  data->_zFar/data->_zNear*data->_bottom,  -data->_zFar)),
+_rbf(Vector3D(data->_zFar/data->_zNear*data->_right, data->_zFar/data->_zNear*data->_bottom,  -data->_zFar)),
+_leftPlane(Plane::fromPoints(Vector3D::ZERO,
+                             Vector3D(data->_left, data->_top, -data->_zNear),
+                             Vector3D(data->_left, data->_bottom, -data->_zNear))),
+_bottomPlane(Plane::fromPoints(Vector3D::ZERO,
+                               Vector3D(data->_left, data->_bottom, -data->_zNear),
+                               Vector3D(data->_right, data->_bottom, -data->_zNear))),
+_rightPlane(Plane::fromPoints(Vector3D::ZERO,
+                              Vector3D(data->_right, data->_bottom, -data->_zNear),
+                              Vector3D(data->_right, data->_top, -data->_zNear))),
+_topPlane(Plane::fromPoints(Vector3D::ZERO,
+                            Vector3D(data->_right, data->_top, -data->_zNear),
+                            Vector3D(data->_left, data->_top, -data->_zNear))),
+_nearPlane(Plane(Vector3D(0, 0, 1), data->_zNear)),
+_farPlane(Plane(Vector3D(0, 0, -1), -data->_zFar)),
 _boundingVolume(NULL)
 {
 }
@@ -118,7 +120,6 @@ bool Frustum::touchesWithBox(const Box* that) const {
 #endif
 }
 
-
 BoundingVolume* Frustum::computeBoundingVolume() const {
   double minx=1e10, miny=1e10, minz=1e10;
   double maxx=-1e10, maxy=-1e10, maxz=-1e10;
@@ -156,5 +157,13 @@ BoundingVolume* Frustum::computeBoundingVolume() const {
   if (_rbf._z<minz) minz=_rbf._z;     if (_rbf._z>maxz) maxz=_rbf._z;
 
   return new Box(Vector3D(minx, miny, minz), Vector3D(maxx, maxy, maxz));
+}
+
+Frustum::~Frustum() {
+  if (_boundingVolume) delete _boundingVolume;
+}
+
+Frustum* Frustum::transformedBy_P(const MutableMatrix44D& matrix) const {
+  return new Frustum(this, matrix, matrix.inversed());
 }
 

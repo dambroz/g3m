@@ -2,14 +2,23 @@
 //  GLState.cpp
 //  G3MiOSSDK
 //
-//  Created by Jose Miguel SN on 17/05/13.
-//
-//
 
 #include "GLState.hpp"
-#include "GLFeature.hpp"
 
-#include <vector>
+#include "GPUProgramManager.hpp"
+
+
+GLState::GLState():
+_parentGLState(NULL),
+_linkedProgram(NULL),
+_parentsTimestamp(-1),
+_timestamp(0),
+_valuesSet(NULL),
+_globalState(NULL),
+_accumulatedFeatures(NULL)
+{
+  _features = new GLFeatureSet();
+}
 
 GLState::~GLState() {
   delete _features;
@@ -25,6 +34,9 @@ GLState::~GLState() {
   if (_linkedProgram != NULL) {
     _linkedProgram->removeReference();
   }
+#ifdef JAVA_CODE
+  super.dispose();
+#endif
 }
 
 void GLState::hasChangedStructure() const {

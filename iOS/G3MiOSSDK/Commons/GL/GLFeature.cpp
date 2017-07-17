@@ -7,8 +7,10 @@
 //
 
 #include "GLFeature.hpp"
+
 #include "Camera.hpp"
 #include "Vector2F.hpp"
+
 
 ViewportExtentGLFeature::ViewportExtentGLFeature(int viewportWidth,
                                                  int viewportHeight) :
@@ -43,6 +45,22 @@ GLFeature(NO_GROUP, GLF_VIEWPORT_EXTENT)
 void ViewportExtentGLFeature::changeExtent(int viewportWidth,
                                            int viewportHeight) {
   _extent->changeValue(viewportWidth, viewportHeight);
+}
+
+CameraPositionGLFeature::CameraPositionGLFeature(const Camera* cam):
+GLFeature(NO_GROUP, GLF_CAMERA_POSITION) {
+  const Vector3D p = cam->getCartesianPosition();
+  _camPos = new GPUUniformValueVec3FloatMutable((float) p._x,
+                                                (float) p._y,
+                                                (float) p._z);
+  _values->addUniformValue(CAMERA_POSITION, _camPos, false);
+}
+
+void CameraPositionGLFeature::update(const Camera* cam) {
+  const Vector3D p = cam->getCartesianPosition();
+  _camPos->changeValue((float) p._x,
+                       (float) p._y,
+                       (float) p._z);
 }
 
 BillboardGLFeature::BillboardGLFeature(const Vector3D& position,
@@ -99,8 +117,8 @@ _polygonOffsetFactor(polygonOffsetFactor),
 _polygonOffsetUnits(polygonOffsetUnits),
 _lineWidth(lineWidth)
 {
-  _position = new GPUAttributeValueVec4Float(buffer, arrayElementSize, index, stride, normalized);
-  _values->addAttributeValue(POSITION, _position, false);
+  GPUAttributeValueVec4Float* position = new GPUAttributeValueVec4Float(buffer, arrayElementSize, index, stride, normalized);
+  _values->addAttributeValue(POSITION, position, false);
   
   if (needsPointSize) {
     _values->addUniformValue(POINT_SIZE, new GPUUniformValueFloat(pointSize), false);
@@ -139,7 +157,7 @@ GeometryGLFeature::~GeometryGLFeature() {
 #endif
 }
 
-///////////////////////////////
+
 Geometry2DGLFeature::Geometry2DGLFeature(IFloatBuffer* buffer,
                                          int arrayElementSize,
                                          int index,
@@ -152,8 +170,8 @@ Geometry2DGLFeature::Geometry2DGLFeature(IFloatBuffer* buffer,
 GLFeature(NO_GROUP, GLF_GEOMETRY),
 _lineWidth(lineWidth)
 {
-  _position = new GPUAttributeValueVec2Float(buffer, arrayElementSize, index, stride, normalized);
-  _values->addAttributeValue(POSITION_2D, _position, false);
+  GPUAttributeValueVec2Float* position = new GPUAttributeValueVec2Float(buffer, arrayElementSize, index, stride, normalized);
+  _values->addAttributeValue(POSITION_2D, position, false);
   
   _translation =  new GPUUniformValueVec2FloatMutable(translation._x, translation._y);
   _values->addUniformValue(TRANSLATION_2D, _translation, false);
@@ -175,7 +193,7 @@ Geometry2DGLFeature::~Geometry2DGLFeature() {
 #endif
 }
 
-/////////////////////////////////
+
 
 void TextureGLFeature::createBasicValues(IFloatBuffer* texCoords,
                                          int arrayElementSize,
@@ -216,7 +234,7 @@ void TextureGLFeature::createBasicValues(IFloatBuffer* texCoords,
 }
 
 
-TextureGLFeature::TextureGLFeature(const IGLTextureId* texID,
+TextureGLFeature::TextureGLFeature(const IGLTextureID* texID,
                                    IFloatBuffer* texCoords,
                                    int arrayElementSize,
                                    int index,
@@ -248,7 +266,7 @@ _rotationAngle(NULL)
   setRotationAngleInRadiansAndRotationCenter(rotationAngleInRadians, rotationCenterU, rotationCenterV);
 }
 
-TextureGLFeature::TextureGLFeature(const IGLTextureId* texID,
+TextureGLFeature::TextureGLFeature(const IGLTextureID* texID,
                                    IFloatBuffer* texCoords,
                                    int arrayElementSize,
                                    int index,
@@ -357,9 +375,9 @@ GLColorGroupFeature(GLF_FLATCOLOR, 2, blend, sFactor, dFactor)
 
 
 
-//////////////////////////////////////////
 
-TextureIDGLFeature::TextureIDGLFeature(const IGLTextureId* texID) :
+
+TextureIDGLFeature::TextureIDGLFeature(const IGLTextureID* texID) :
 PriorityGLFeature(COLOR_GROUP, GLF_TEXTURE_ID, 4),
 _texID(texID)
 {

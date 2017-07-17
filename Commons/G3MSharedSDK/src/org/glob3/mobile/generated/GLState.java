@@ -1,23 +1,23 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 //
 //  GLState.cpp
 //  G3MiOSSDK
-//
-//  Created by Jose Miguel SN on 17/05/13.
-//
 //
 
 //
 //  GLState.hpp
 //  G3MiOSSDK
 //
-//  Created by Jose Miguel SN on 17/05/13.
-//
-//  Created by Agustin Trujillo Pino on 27/10/12.
-//
 
 
 
+
+//class GLFeatureSet;
+//class GPUVariableValueSet;
+//class GLGlobalState;
+//class GPUProgram;
+//class GL;
+//class GPUProgramManager;
 
 
 public class GLState extends RCObject
@@ -80,6 +80,7 @@ public class GLState extends RCObject
     {
       _linkedProgram.removeReference();
     }
+    super.dispose();
   }
 
 
@@ -120,8 +121,6 @@ public class GLState extends RCObject
     }
     return _accumulatedFeatures;
   }
-//  GLFeatureSet* createAccumulatedFeatures() const;
-
 
   public final void setParent(GLState parent)
   {

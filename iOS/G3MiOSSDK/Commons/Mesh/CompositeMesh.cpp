@@ -9,6 +9,8 @@
 #include "CompositeMesh.hpp"
 
 #include "Vector3D.hpp"
+#include "BoundingVolume.hpp"
+
 
 CompositeMesh::~CompositeMesh() {
   const size_t childrenCount = _children.size();
@@ -22,7 +24,6 @@ CompositeMesh::~CompositeMesh() {
 #ifdef JAVA_CODE
   super.dispose();
 #endif
-
 }
 
 size_t CompositeMesh::getVertexCount() const {
@@ -46,7 +47,7 @@ bool CompositeMesh::isTransparent(const G3MRenderContext* rc) const {
   return false;
 }
 
-const Vector3D CompositeMesh::getVertex(size_t index) const {
+const Vector3D CompositeMesh::getVertex(const size_t index) const {
   int acumIndex = 0;
   const size_t childrenCount = _children.size();
   for (size_t i = 0; i < childrenCount; i++) {
@@ -58,7 +59,7 @@ const Vector3D CompositeMesh::getVertex(size_t index) const {
     }
     acumIndex += childSize;
   }
-  return Vector3D::nan();
+  return Vector3D::NANV;
 }
 
 BoundingVolume* CompositeMesh::calculateBoundingVolume() const {
@@ -67,10 +68,18 @@ BoundingVolume* CompositeMesh::calculateBoundingVolume() const {
     return NULL;
   }
 
-  BoundingVolume* result = _children[0]->getBoundingVolume();
+  BoundingVolume* childBV = _children[0]->getBoundingVolume();
+  if (childBV == NULL) {
+    return NULL;
+  }
+  BoundingVolume* result = childBV->copy();
   for (size_t i = 1; i < childrenCount; i++) {
-    Mesh* child = _children[i];
-    BoundingVolume* newResult = result->mergedWith( child->getBoundingVolume() );
+    childBV = _children[i]->getBoundingVolume();
+    if (childBV == NULL) {
+      delete result;
+      return NULL;
+    }
+    BoundingVolume* newResult = result->mergedWith( childBV );
     delete result;
     result = newResult;
   }
@@ -98,13 +107,5 @@ void CompositeMesh::rawRender(const G3MRenderContext* rc,
   for (size_t i = 0; i < childrenCount; i++) {
     Mesh* child = _children[i];
     child->render(rc, parentGLState);
-  }
-}
-
-void CompositeMesh::showNormals(bool v) const {
-  const size_t childrenCount = _children.size();
-  for (size_t i = 0; i < childrenCount; i++) {
-    Mesh* child = _children[i];
-    child->showNormals(v);
   }
 }

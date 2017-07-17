@@ -17,6 +17,10 @@
 #include <G3MiOSSDK/GFont.hpp>
 #include <G3MiOSSDK/IDownloader.hpp>
 #include <G3MiOSSDK/IImageDownloadListener.hpp>
+#include <G3MiOSSDK/Geodetic3D.hpp>
+#include <G3MiOSSDK/IImage.hpp>
+#include <G3MiOSSDK/Color.hpp>
+#include <G3MiOSSDK/G3MContext.hpp>
 
 #include "G3MDemoModel.hpp"
 
@@ -72,7 +76,7 @@ public:
     canvas->setFillColor(Color::fromRGBA(1, 1, 0, 0.5));
     canvas->fillRectangle(0, 0, width, height);
     canvas->setLineWidth(4);
-    canvas->setLineColor(Color::black());
+    canvas->setLineColor(Color::BLACK);
     canvas->strokeRectangle(0, 0, width, height);
 
     const int steps = 8;
@@ -87,7 +91,7 @@ public:
     }
 
     canvas->setFont(GFont::monospaced());
-    canvas->setFillColor(Color::black());
+    canvas->setFillColor(Color::BLACK);
 //    canvas->fillText("0,0", 0, 0);
 //    canvas->fillText("w,h", width, height);
 

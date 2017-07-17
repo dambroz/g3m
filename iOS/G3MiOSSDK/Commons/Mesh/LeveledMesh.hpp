@@ -10,9 +10,9 @@
 #define __G3MiOSSDK__LeveledMesh__
 
 #include "Mesh.hpp"
-#include "Vector3D.hpp"
 
-class LeveledMesh: public Mesh{
+
+class LeveledMesh : public Mesh{
 private:
   Mesh* _mesh;
   
@@ -46,9 +46,7 @@ public:
     return _mesh->getVertexCount();
   }
   
-  const Vector3D getVertex(size_t i) const {
-    return _mesh->getVertex(i);
-  }
+  const Vector3D getVertex(const size_t index) const;
   
   void rawRender(const G3MRenderContext* rc,
                  const GLState* parentState) const {
@@ -65,10 +63,6 @@ public:
   
   int getLevel() const {
     return _currentLevel;
-  }
-
-  void showNormals(bool v) const {
-    _mesh->showNormals(v);
   }
   
 };

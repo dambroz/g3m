@@ -1,4 +1,4 @@
-package org.glob3.mobile.generated; 
+package org.glob3.mobile.generated;
 public class DeviceAttitudeCameraHandler extends CameraEventHandler
 {
 
@@ -40,6 +40,11 @@ public class DeviceAttitudeCameraHandler extends CameraEventHandler
     IDeviceLocation.instance().stopTrackingLocation();
   
     _locationModifier = null;
+  }
+
+  public final RenderState getRenderState(G3MRenderContext rc)
+  {
+    return RenderState.ready();
   }
 
   public final void render(G3MRenderContext rc, CameraContext cameraContext)

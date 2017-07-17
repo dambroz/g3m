@@ -13,6 +13,10 @@
 #include "LayerCondition.hpp"
 #include "RenderState.hpp"
 #include "TimeInterval.hpp"
+#include "IStringBuilder.hpp"
+#include "IMathUtils.hpp"
+#include "Vector2D.hpp"
+
 
 WMSLayer* WMSLayer::newMercator(const std::string&        mapLayer,
                                 const URL&                mapServerURL,
@@ -173,7 +177,7 @@ WMSLayer::WMSLayer(const std::string&                mapLayer,
 RasterLayer(timeToCache,
             readExpired,
             (parameters == NULL)
-            ? LayerTilesRenderParameters::createDefaultWGS84(Sector::fullSphere(), 0, 17)
+            ? LayerTilesRenderParameters::createDefaultWGS84(Sector::FULL_SPHERE, 0, 17)
             : parameters,
             transparency,
             condition,
@@ -210,7 +214,7 @@ WMSLayer::WMSLayer(const std::string&                mapLayer,
 RasterLayer(timeToCache,
             readExpired,
             (parameters == NULL)
-            ? LayerTilesRenderParameters::createDefaultWGS84(Sector::fullSphere(), 0, 17)
+            ? LayerTilesRenderParameters::createDefaultWGS84(Sector::FULL_SPHERE, 0, 17)
             : parameters,
             transparency,
             condition,
